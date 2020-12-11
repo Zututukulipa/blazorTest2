@@ -1,4 +1,6 @@
 using System;
+using System.Net;
+using System.Net.Security;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -7,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ElsaWebApp.Areas.Identity;
+using ElsaWebApp.Controllers.DataAccess;
+using Microsoft.EntityFrameworkCore;
 
 namespace ElsaWebApp
 {
@@ -25,6 +29,10 @@ namespace ElsaWebApp
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
+
+            services.AddDbContext<SchooldContext>(options =>
+                options.UseOracle(Configuration.GetConnectionString("DefaultConnection")));
+            
             services.Configure<IdentityOptions>(options =>
             {
                 options.Password.RequiredLength = 8;
@@ -46,11 +54,19 @@ namespace ElsaWebApp
                 options.SlidingExpiration = true;
             });
             services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, errors) =>
+            {
+                // local dev, just approve all certs
+                if (env.IsDevelopment()) return true;
+                return errors == SslPolicyErrors.None ;
+            };
+            
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

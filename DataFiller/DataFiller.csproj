@@ -7,7 +7,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\CzechFactory\HumanLab\HumanLab.csproj" />
-      <ProjectReference Include="..\ElsaApi\ElsaApi.csproj" />
+      <ProjectReference Include="..\ElsaWebApp\ElsaWebApp.csproj" />
     </ItemGroup>
 
 </Project>

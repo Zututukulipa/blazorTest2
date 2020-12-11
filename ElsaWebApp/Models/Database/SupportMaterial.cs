@@ -19,6 +19,9 @@ namespace ElsaWebApp.Models.Database
         [Column("MATERIAL_NAME")]
         public string MaterialName { get; set; }
 
+        [Column("BINARY_DATA")]
+        public byte[] BinaryData { get; set; }
+
         [Column("PAGE_COUNT")]
         public int PageCount { get; set; }
 

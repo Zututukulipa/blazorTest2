@@ -19,9 +19,6 @@ namespace ElsaWebApp.Models.Database
         [Column("EXAM_PASSWORD")]
         public string ExamPassword { get; set; }
 
-        [Column("QUESTION_COUNT")]
-        public int QuestionCount { get; set; }
-
         [Column("EXAM_START")]
         public DateTime ExamStart { get; set; }
 
@@ -31,11 +28,20 @@ namespace ElsaWebApp.Models.Database
         [Column("TYPE_ID")]
         public int TypeId { get; set; }
 
+        [ForeignKey("TypeId")]
+        public ExamType ExamType { get; set; }
+        
         [Column("SUBJECT_ID")]
         public int SubjectId { get; set; }
 
+        [ForeignKey("SubjectId")]
+        public Subject Subject { get; set; }
+
         [Column("CREATOR_ID")]
         public int CreatorId { get; set; }
+
+        [ForeignKey("CreatorId")]
+        public DbUser Creator { get; set; }
 
     }
 }

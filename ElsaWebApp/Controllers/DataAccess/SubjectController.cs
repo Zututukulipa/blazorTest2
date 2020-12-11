@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using DataFiller;
 using ElsaWebApp.Models.Database;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 
 namespace ElsaWebApp.Controllers.DataAccess
 {
@@ -17,8 +20,8 @@ namespace ElsaWebApp.Controllers.DataAccess
         {
             Context = context;
         }
-        
-        [HttpGet]
+
+        [HttpGet("getAll")]
         public async Task<ActionResult<List<Subject>>> GetSubjects()
         {
             var subjects = await Context.Subjects.ToListAsync();
@@ -26,6 +29,19 @@ namespace ElsaWebApp.Controllers.DataAccess
             {
                 return new NotFoundResult();
             }
+
+            return new OkObjectResult(subjects);
+        }
+        
+        [HttpGet("getAllRead")]
+        public async Task<ActionResult<List<Subject>>> GetSubjectsRead()
+        {
+            var subjects = await Context.Subjects.AsNoTracking().ToListAsync();
+            if (subjects.Count == 0)
+            {
+                return new NotFoundResult();
+            }
+
             return new OkObjectResult(subjects);
         }
 
@@ -37,6 +53,7 @@ namespace ElsaWebApp.Controllers.DataAccess
             {
                 return new OkObjectResult(list);
             }
+
             return new NotFoundResult();
         }
 
@@ -49,7 +66,71 @@ namespace ElsaWebApp.Controllers.DataAccess
                 await Context.SaveChangesAsync();
                 return new OkResult();
             }
-            catch(Exception _)
+            catch (Exception _)
+            {
+                return new BadRequestResult();
+            }
+        }
+
+        [HttpPost("addRange")]
+        public async Task<ActionResult> InsertSubject(List<Subject> subjects)
+        {
+            try
+            {
+                await Context.Subjects.AddRangeAsync(subjects);
+                await Context.SaveChangesAsync();
+                return new OkResult();
+            }
+            catch (Exception _)
+            {
+                return new BadRequestResult();
+            }
+        }
+
+        [HttpPost("pairSubjectStudentRange")]
+        public async Task<ActionResult> InsertSubject(List<UserSubjects> subjects)
+        {
+            try
+            {
+                await Context.UserSubjects.AddRangeAsync(subjects);
+                await Context.SaveChangesAsync();
+                return new OkResult();
+            }
+            catch (Exception _)
+            {
+                return new BadRequestResult();
+            }
+        }
+
+        [HttpPost("pairSubject")]
+        public async Task<ActionResult> PairSubject(ClassroomSubjects pair)
+        {
+            try
+            {
+                await Context.ClassroomSubjects.AddAsync(pair);
+                await Context.SaveChangesAsync();
+                return new OkResult();
+            }
+            catch (Exception _)
+            {
+                return new BadRequestResult();
+            }
+        }
+
+        [HttpPost("pairSubjectRange")]
+        public async Task<ActionResult> PairSubject(List<ClassroomSubjects> pairs)
+        {
+            try
+            {
+                foreach (var pair in pairs)
+                {
+                    await Context.ClassroomSubjects.AddAsync(pair);
+                }
+
+                await Context.SaveChangesAsync();
+                return new OkResult();
+            }
+            catch (Exception _)
             {
                 return new BadRequestResult();
             }

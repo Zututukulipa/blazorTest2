@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ElsaWebApp.Models.Database
@@ -5,7 +6,7 @@ namespace ElsaWebApp.Models.Database
     [Table("MESSAGE_RECIPIENT")]
     public class MessageRecipient
     {
-        [Column("RECIPIENT_ID")]
+        [Key, Column("RECIPIENT_ID")]
         public int RecipientId { get; set; }
 
         [Column("MESSAGE_ID")]

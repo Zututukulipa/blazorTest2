@@ -1,4 +1,5 @@
 using ElsaWebApp.Models.Database;
+using ElsaWebApp.Models.Views;
 using Microsoft.EntityFrameworkCore;
 
 namespace ElsaWebApp.Controllers.DataAccess
@@ -14,13 +15,18 @@ namespace ElsaWebApp.Controllers.DataAccess
             public DbSet<Exam> Exams { get; set; }
             public DbSet<ExamResult> ExamResults { get; set; }
             public DbSet<ExamType> ExamTypes { get; set; }
+            public DbSet<ExamQuestion> ExamQuestions { get; set; }
+            public DbSet<ExamAnswer> ExamAnswers { get; set; }
             public DbSet<MessageRecipient> Recipients { get; set; }
+            public DbSet<UserAnswers> UserAnswers { get; set; }
+            public DbSet<AnswerType> AnswerTypes { get; set; }
             public DbSet<PrivateMessage> PrivateMessages { get; set; }
             public DbSet<Subject> Subjects { get; set; }
             public DbSet<SupportMaterial> SupportMaterials { get; set; }
             public DbSet<UserGroup> UserGroupSet { get; set; }
             public DbSet<UserGroups> UserGroups { get; set; }
             public DbSet<UserSubjects> UserSubjects { get; set; }
+            public DbSet<UserExamAnswersView> UserExamAnswersView { get; set; }
             
 
             public SchooldContext(DbContextOptions<SchooldContext> options) : base(options)
@@ -34,6 +40,9 @@ namespace ElsaWebApp.Controllers.DataAccess
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
                 base.OnModelCreating(modelBuilder);
+                
+                modelBuilder.Entity<UserGroups>()
+                    .HasKey(bc => new { bc.UserId, bc.GroupId});  
 
                 modelBuilder.Entity<UserGroups>()
                     .HasOne(bc => bc.User)
@@ -42,9 +51,12 @@ namespace ElsaWebApp.Controllers.DataAccess
                 
                 modelBuilder.Entity<UserGroups>()
                     .HasOne(bc => bc.Group)
-                    .WithMany(c => c.Students)
+                    .WithMany(c => c.UserGroups)
                     .HasForeignKey(bc => bc.UserId);
-
+                
+                modelBuilder.Entity<UserSubjects>()
+                    .HasKey(bc => new { bc.StudentId, bc.SubjectId });  
+                
                 modelBuilder.Entity<UserSubjects>()
                     .HasOne(bc => bc.Student)
                     .WithMany(b => b.UserSubjects)
@@ -55,7 +67,9 @@ namespace ElsaWebApp.Controllers.DataAccess
                     .WithMany(c => c.Students)
                     .HasForeignKey(bc => bc.StudentId);
 
-
+                modelBuilder.Entity<ClassroomSubjects>()
+                    .HasKey(bc => new { bc.ClassroomId, bc.SubjectId });  
+                
                 modelBuilder.Entity<ClassroomSubjects>()
                     .HasOne(cs => cs.Classroom)
                     .WithMany(c => c.Subjects)
@@ -66,8 +80,24 @@ namespace ElsaWebApp.Controllers.DataAccess
                     .WithMany(s => s.Classrooms)
                     .HasForeignKey(cs => cs.ClassroomId);
                 
+                modelBuilder.Entity<UserAnswers>()
+                    .HasKey(bc => new { bc.UserId, bc.AnswerId });  
                 
-              
+                modelBuilder.Entity<UserAnswers>()
+                    .HasOne(cs => cs.User)
+                    .WithMany(c => c.Answers)
+                    .HasForeignKey(cs => cs.AnswerId);
+                
+                modelBuilder.Entity<UserAnswers>()
+                    .HasOne(cs => cs.Answer)
+                    .WithMany(s => s.Users)
+                    .HasForeignKey(cs => cs.UserId);
+
+                modelBuilder.Entity<ExamQuestion>()
+                    .HasMany(a => a.Answers)
+                    .WithOne(q => q.Question);
+
+                modelBuilder.Entity<UserExamAnswersView>().HasNoKey();
             }
     }
 }

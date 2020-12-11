@@ -102,6 +102,15 @@ namespace ElsaWebApp.Controllers.DataAccess
                 return new NotFoundResult();
             return new OkObjectResult(users);
         }
+        
+        [HttpGet("GetAllRead")]
+        public async Task<ActionResult<List<DbUser>>> GetUsersRead()
+        {
+            var users = await Context.Students.AsNoTracking().ToListAsync();
+            if (users.Count == 0)
+                return new NotFoundResult();
+            return new OkObjectResult(users);
+        }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<DbUser>> GetUserById(int id)
@@ -124,6 +133,21 @@ namespace ElsaWebApp.Controllers.DataAccess
             try
             {
                 await Context.Students.AddAsync(user);
+                await Context.SaveChangesAsync();
+                return new OkResult();
+            }
+            catch (Exception _)
+            {
+                return new BadRequestResult();
+            }
+        }
+        
+        [HttpPost("addRange")]
+        public async Task<ActionResult> InsertUser(List<DbUser> users)
+        {
+            try
+            {
+                await Context.Students.AddRangeAsync(users);
                 await Context.SaveChangesAsync();
                 return new OkResult();
             }

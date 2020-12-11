@@ -1,8 +1,8 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using ElsaWebApp.Controllers.DataAccess;
 using ElsaWebApp.Models.Database;
+using ElsaWebApp.Services.DataAccess;
 using HumanLab;
 
 namespace DataFiller
@@ -13,9 +13,16 @@ namespace DataFiller
         private readonly UserService _service = new UserService(new HttpClient());
         public async Task<bool> AddUsers(int amount)
         {
-            var users = await _lib.GetPeople(50);
+            var users = await _lib.GetPeople(amount);
             
-            return await _service.InsertUser(users.ConvertAll(new Converter<Person, DbUser>(Mapper.GetUser)));
+            return await _service.InsertUser(users.ConvertAll(Mapper.GetUser));
+        }
+        
+        public async Task<bool> AddProfessors(int amount)
+        {
+            var users = await _lib.GetPeople(amount);
+            
+            return await _service.InsertUser(users.ConvertAll(Mapper.GetProfessor));
         }
 
     }

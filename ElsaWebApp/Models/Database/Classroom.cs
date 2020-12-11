@@ -20,6 +20,6 @@ namespace ElsaWebApp.Models.Database
         public bool IsOperational { get; set; }
 
 
-        public IEnumerable<ClassroomSubjects> Subjects { get; set; }
+        public ICollection<ClassroomSubjects> Subjects { get; set; }
     }
 }

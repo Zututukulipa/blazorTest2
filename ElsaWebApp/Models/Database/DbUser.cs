@@ -36,15 +36,15 @@ namespace ElsaWebApp.Models.Database
         public string StudyYear { get; set; }
 
         [Column("PROFILE_PICTURE")]
-        public string ProfilePicture { get; set; }
+        public Byte[] ProfilePicture { get; set; }
 
         [Column("TIME_CREATED")]
         public DateTime TimeCreated { get; set; }
 
-        [Column("ROLE_ROLE_ID")]
+        [Column("ROLE_ID")]
         public int RoleId { get; set; }
 
-        [Column("ADDRESS_ADDRESS_ID")]
+        [Column("ADDRESS_ID")]
         public int AddressId { get; set; }
 
         [ForeignKey("AddressId")]
@@ -53,8 +53,9 @@ namespace ElsaWebApp.Models.Database
         [Column("SALT")]
         public string Salt { get; set; }
 
-        public IEnumerable<UserGroups> UserGroups { get; set; }
-        public IEnumerable<UserSubjects> UserSubjects { get; set; }
+        public ICollection<UserGroups> UserGroups { get; set; }
+        public ICollection<UserSubjects> UserSubjects { get; set; }
+        public ICollection<UserAnswers> Answers { get; set; }
 
         public override string ToString()
         {

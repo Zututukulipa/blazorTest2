@@ -18,7 +18,7 @@ namespace ElsaWebApp.Controllers.DataAccess
             Context = context;
         }
         
-        [HttpGet]
+        [HttpGet("getAll")]
         public async Task<ActionResult<List<UserGroup>>> GetGroups()
         {
             var groups = await Context.UserGroupSet.ToListAsync();
@@ -42,6 +42,36 @@ namespace ElsaWebApp.Controllers.DataAccess
             try
             {
                 await Context.AddAsync(group);
+                await Context.SaveChangesAsync();
+                return new OkResult();
+            }
+            catch(Exception _)
+            {
+                return new BadRequestResult();
+            }
+        }
+        
+        [HttpPost("addRange")]
+        public async Task<ActionResult> InsertGroup(List<UserGroup> groups)
+        {
+            try
+            {
+                await Context.AddRangeAsync(groups);
+                await Context.SaveChangesAsync();
+                return new OkResult();
+            }
+            catch(Exception _)
+            {
+                return new BadRequestResult();
+            }
+        }
+        
+        [HttpPost("assignRange")]
+        public async Task<ActionResult> InsertGroup(List<UserGroups> groups)
+        {
+            try
+            {
+                await Context.AddRangeAsync(groups);
                 await Context.SaveChangesAsync();
                 return new OkResult();
             }

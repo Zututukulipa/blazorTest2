@@ -16,7 +16,7 @@ namespace ElsaWebApp.Models.Database
         [Column("LEADER_ID")]
         public int LeaderId { get; set; }
 
-        public IEnumerable<UserGroups> Students { get; set; }
+        public virtual ICollection<UserGroups> UserGroups { get; set; }
         
     }
 }

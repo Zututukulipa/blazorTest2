@@ -5,15 +5,21 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using ElsaWebApp.Models.Database;
 
-namespace ElsaWebApp.Controllers.DataAccess
+namespace ElsaWebApp.Services.DataAccess
 {
     public class UserService
     {
         private HttpClient _http;
         public UserService(HttpClient client)
         {
+            HttpClientHandler clientHandler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = 
+                    (sender, cert, chain, sslPolicyErrors) => true
+            };
+
             _http = client;
-            _http.BaseAddress = new Uri("https://localhost:8080/");
+            _http.BaseAddress = new Uri("https://localhost:5001/");
         }
 
         public async Task<List<DbUser>> GetUsers()
@@ -44,7 +50,7 @@ namespace ElsaWebApp.Controllers.DataAccess
         
         public async Task<bool> InsertUser(List<DbUser> users)
         {
-            var responseMessage = await _http.PostAsJsonAsync("user", users);
+            var responseMessage = await _http.PostAsJsonAsync("user/addRange", users);
             return responseMessage.IsSuccessStatusCode;
         }
 
@@ -52,6 +58,11 @@ namespace ElsaWebApp.Controllers.DataAccess
         {
             var responseMessage = await _http.PutAsJsonAsync("user", user);
             return responseMessage.IsSuccessStatusCode;
+        }
+
+        public async Task<List<DbUser>> GetUsersRead()
+        {
+            return await _http.GetFromJsonAsync<List<DbUser>>("user/GetAllRead");
         }
     }
 }

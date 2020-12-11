@@ -25,10 +25,15 @@ namespace ElsaWebApp.Models.Database
         [Column("DESCRIPTION")]
         public string Description { get; set; }
 
-        [Column("GARANT_IT")]
+        [Column("GARANT_ID")]
         public int GarantId { get; set; }
 
-        public IEnumerable<UserSubjects> Students { get; set; }
-        public IEnumerable<ClassroomSubjects> Classrooms { get; set; }
+        public ICollection<UserSubjects> Students { get; set; }
+        public ICollection<ClassroomSubjects> Classrooms { get; set; }
+
+        public override string ToString()
+        {
+            return $"{SubjectName}\n{Description}\nMax:{MaxCapacity}, Current:{CurrentCapacity}\n{Semester}";
+        }
     }
 }

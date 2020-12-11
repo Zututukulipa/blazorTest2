@@ -15,9 +15,16 @@ namespace DataFiller
                                         };
             return new DbUser(){Address = address, Email = person.Email, 
                                 Firstname = person.FirstName, Surname = person.LastName,
-                                Phone = person.PhoneNumber, BirthDate = person.BirthDate,
+                                Phone = person.PhoneNumber.Replace(" ", ""), BirthDate = person.BirthDate,
                                 RoleId = 3
             };
+        }
+
+        public static DbUser GetProfessor(Person input)
+        {
+            var user = GetUser(input);
+            user.RoleId = 2;
+            return user;
         }
     }
 }
