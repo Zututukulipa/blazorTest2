@@ -1,0 +1,510 @@
+@page "/Groups"
+@using ElsaWebApp.Controllers.DataAccess
+@using ElsaWebApp.Models.Database
+@using Microsoft.EntityFrameworkCore
+@using MoreLinq
+@using Blazorise.Snackbar
+@using System.Security.Claims
+@inject SchooldContext Context;
+@inject NavigationManager NavigationManager;
+@inject AuthenticationStateProvider Provider;
+@if (_userClaims != null)
+{
+    var role = _userClaims.FindFirst(c => c.Type == ClaimTypes.Role)?.Value;
+
+    @if (_addingGroup)
+    {
+        <Field>
+            <FieldLabel><Heading Size="HeadingSize.Is4">Group Name</Heading></FieldLabel>
+            <FieldBody>
+                <TextEdit @bind-Text="@createdGroup.GroupName" Placeholder="Some text value..."/>
+            </FieldBody>
+        </Field>
+        <Field>
+            <FieldLabel><Heading Size="HeadingSize.Is4">Group Leader</Heading></FieldLabel>
+            <FieldBody>
+                <Autocomplete Data="@_professors"
+                              TextField="@((item) => item.Firstname + " " + item.Surname + " " + item.Email)"
+                              ValueField="@((item) => item)"
+                              Filter="AutocompleteFilter.Contains"
+                              SelectedValue="@_professorOfAddedGroup"
+                              SelectedValueChanged="@AddedGroupProfessorChanged"
+                              Placeholder="Search..."/>
+            </FieldBody>
+
+        </Field>
+
+        <Heading Size="HeadingSize.Is5">Users</Heading>
+        <Button Clicked="AddUser">
+            <Icon Name="IconName.PlusCircle"/>
+        </Button>
+        if (_addedGroupUsers != null && _addedGroupUsers.Count > 0)
+        {
+            foreach (var user in _addedGroupUsers)
+            {
+                <Autocomplete Data="@_students"
+                              TextField="@((item) => item.Firstname + " " + item.Surname + " " + item.Email)"
+                              ValueField="@((item) => item)"
+                              Filter="AutocompleteFilter.Contains"
+                              SelectedValue="@user.User"
+                              SelectedValueChanged="@UserAddedToGroup"
+                              Placeholder="Search..."/>
+            }
+        }
+    }
+    if (role == "administrator" || role == "professor")
+    {
+        <Button Clicked="AddGroup">Add Group</Button>
+        <hr/>
+    }
+}
+@if (_activeUser != null && selectedGroup != null)
+{
+    <Tabs SelectedTab="@selectedTab" SelectedTabChanged="@OnSelectedTabChanged">
+        <Items>
+            <Tab Name="users">Users</Tab>
+            <Tab Name="chat">Chat</Tab>
+        </Items>
+        <Content>
+            <TabPanel Name="users">
+                <AuthorizeView Roles="administrator, professor">
+                    <Authorized>
+                        <Select TValue="int" SelectedValue="@selectedGroup.GroupId" SelectedValueChanged="@OnSelectedValueChanged">
+                            @{
+                                foreach (var group in groups.DistinctBy(g => g.Group))
+                                {
+                                    <SelectItem Value="@group.GroupId">@group.Group.GroupName</SelectItem>
+                                }
+                            }
+                        </Select>
+                    </Authorized>
+                </AuthorizeView>
+                <AuthorizeView Roles="student">
+                    <Authorized>
+                        <Select TValue="int" SelectedValue="@selectedGroup.GroupId" SelectedValueChanged="@OnSelectedValueChanged">
+                            @{
+                                foreach (var group in groups.Where(x => x.User == _activeUser).DistinctBy(g => g.Group))
+                                {
+                                    <SelectItem Value="@group.GroupId">@group.Group.GroupName</SelectItem>
+                                }
+                            }
+                        </Select>
+                    </Authorized>
+                </AuthorizeView>
+                <hr/>
+                @{
+                    if (selectedGroup != null)
+                    {
+                        var navigationLink = $"Profile/{selectedGroup.Group.Leader.UserId}";
+                        <Row>
+                            <Column>
+                                <Blazorise.Link Clicked="() => NavigationManager.NavigateTo(navigationLink)">
+                                    <Heading Size="HeadingSize.Is2">
+                                        @selectedGroup.Group.Leader.Firstname @selectedGroup.Group.Leader.Surname
+                                    </Heading>
+                                </Blazorise.Link>
+                            </Column>
+                            <AuthorizeView Roles="administrator, professor">
+                                <Authorized>
+                                    <Column ColumnSize="ColumnSize.Is1">
+                                        @{
+                                                <Button Clicked="() => modalRef.Show()">Edit</Button>
+                                        }
+                                    </Column>
+                                </Authorized>
+                            </AuthorizeView>
+                        </Row>
+                        <Table Hoverable="true">
+                            <TableHeader ThemeContrast="ThemeContrast.Dark">
+                                <TableRow>
+                                    <TableHeaderCell>Firstname</TableHeaderCell>
+                                    <TableHeaderCell>Surname</TableHeaderCell>
+                                    <TableHeaderCell>Email</TableHeaderCell>
+                                    <AuthorizeView Roles="administrator, professor">
+                                        <Authorized>
+                                            <TableHeaderCell>
+                                                <Button Color="Color.Success" Clicked="() => addingUser = !addingUser">
+                                                    <Icon Name="IconName.PlusCircle"></Icon>
+                                                </Button>
+                                            </TableHeaderCell>
+                                        </Authorized>
+                                    </AuthorizeView>
+
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                @{
+                                    selectedGroupUsers = Context.Students.Where(s => s.RoleId == 3).ToList();
+                                    if (addingUser)
+                                    {
+                                        <TableRow>
+                                            <TableRowCell ColumnSpan="4">
+                                                <Autocomplete Data="@selectedGroupUsers"
+                                                              TextField="@((item) => item.Firstname + " " + item.Surname + " " + item.Email)"
+                                                              ValueField="@((item) => item)"
+                                                              Filter="AutocompleteFilter.Contains"
+                                                              SelectedValue="@_userToBeAdded"
+                                                              SelectedValueChanged="@UserAddChange"
+                                                              Placeholder="Search..."/>
+                                            </TableRowCell>
+                                        </TableRow>
+                                    }
+                                }
+                                @{
+                                    groupUsersList = groups.Where(ug => ug.GroupId == selectedGroup.GroupId).ToList();
+                                    foreach (var user in groupUsersList)
+                                    {
+                                        var path = $"Profile/{user.UserId}";
+                                        <TableRow>
+                                            <TableRowCell Clicked="() => NavigationManager.NavigateTo(path)">@user.User.Firstname</TableRowCell>
+                                            <TableRowCell Clicked="() => NavigationManager.NavigateTo(path)">@user.User.Surname</TableRowCell>
+                                            <TableRowCell Clicked="() => NavigationManager.NavigateTo(path)">@user.User.Email</TableRowCell>
+                                            <AuthorizeView Roles="administrator, professor">
+                                                <Authorized>
+                                                    <TableRowCell>
+                                                        <Button Color="Color.Danger" Clicked="() => { groups.Remove(user); removedGroups.Add(user);}">
+                                                            <Icon Name="IconName.MinusCircle"></Icon>
+                                                        </Button>
+                                                    </TableRowCell>
+                                                </Authorized>
+                                            </AuthorizeView>
+                                        </TableRow>
+                                    }
+                                }
+                            </TableBody>
+                        </Table>
+                        <AuthorizeView Roles="administrator, professor">
+                            <Authorized>
+                                <Button Color="Color.Primary" Clicked="SaveChangesClicked">Save Changes</Button>
+                                <Button Color="Color.Info" Clicked="DiscardChangesClicked">Discard Changes</Button>
+                            </Authorized>
+                        </AuthorizeView>
+                    }
+                }
+            </TabPanel>
+            <TabPanel Name="chat">
+                <Container Class="pre-scrollable">
+                    @{
+                        _activeMessages = _messages.Where(x => x.Group == selectedGroup.Group).OrderByDescending(x => x.Message.TimeSent).ToList();
+                        @foreach (var message in _activeMessages)
+                        {
+                            if (message.Sender == _activeUser)
+                            {
+                                <div class="shadow-none p-3 mb-5 bg-white rounded">
+                                    <div class="text-muted h7 mb-3">You</div>
+                                    <div class="text">
+                                        @message.Message.MessageContent
+                                    </div>
+                                    <div class="text-muted text-right h7 mb-3">@message.Message.TimeSent.ToString("dd/MM/yyyy h:mm tt")</div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="shadow-none p-3 mb-5 bg-light rounded">
+                                    <div class="text-muted h7 mb-3">@message.Sender.Firstname @message.Sender.Surname</div>
+                                    <div class="text">
+                                        @message.Message.MessageContent
+                                    </div>
+                                    <div class="text-muted text-right h7 mb-3">@message.Message.TimeSent.ToString("dd/MM/yyyy h:mm tt")</div>
+                                </div>
+                            }
+                        }
+                    }
+                </Container>
+                <Addons>
+                    <Addon AddonType="AddonType.Body">
+                        <TextEdit @bind-Text="@_messageText" Placeholder="..."></TextEdit>
+                    </Addon>
+                    <Addon AddonType="AddonType.End">
+                        <Button Color="Color.Secondary" Clicked="() => { SendMessage(); }">Reply</Button>
+                    </Addon>
+                </Addons>
+            </TabPanel>
+        </Content>
+    </Tabs>
+}
+
+<SnackbarStack @ref="snackbar" Location="SnackbarStackLocation.Right"/>
+@if (selectedGroup != null)
+{
+    <Modal @ref="modalRef">
+        <ModalBackdrop/>
+        <ModalContent IsCentered="true">
+            <ModalHeader>
+                <ModalTitle>Group edit</ModalTitle>
+                <CloseButton Clicked="() => modalRef.Hide()"/>
+            </ModalHeader>
+            <ModalBody>
+                <Field>
+                    <FieldLabel>Name</FieldLabel>
+                    <TextEdit TextChanged="@GroupNameChanged" Placeholder="@selectedGroup.Group.GroupName"/>
+                </Field>
+                <AuthorizeView Roles="administrator">
+                    <Authorized>
+                        <Field>
+                            <FieldLabel>Leader</FieldLabel>
+                            @{
+                                            <Autocomplete Data="@_professors"
+                                                          TextField="@((item) => item.Firstname + " " + item.Surname + " " + item.Email)"
+                                                          ValueField="@((item) => item)"
+                                                          Filter="AutocompleteFilter.Contains"
+                                                          SelectedValue="@selectedGroup.Group.Leader"
+                                                          SelectedValueChanged="@LeaderChange"
+                                                          Placeholder="Search..."/>
+                            }
+                        </Field>
+                    </Authorized>
+                </AuthorizeView>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Primary" Clicked="@ApplyGroupDetails">Apply</Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+}
+
+
+@code {
+
+    private string selectedTab = "users";
+
+    private List<UserGroups> groups;
+    private List<UserGroups> removedGroups;
+    private List<UserGroups> addedUsers;
+    private List<DbUser> _professors;
+    private List<DbUser> _students;
+    private List<UserGroups> _addedGroupUsers;
+
+
+    private DbUser changedLeader;
+    private string changedGroupName;
+
+    private bool actionMade = false;
+    private bool _addingGroup;
+
+    private string _messageText;
+
+    private UserGroups selectedGroup;
+    private UserGroup createdGroup;
+
+    private bool addingUser;
+    private bool groupDetailsChanged;
+    private DbUser _userToBeAdded;
+    private DbUser _professorOfAddedGroup;
+    private List<DbUser> selectedGroupUsers;
+
+    private List<MessageRecipient> _messages;
+    private List<MessageRecipient> _activeMessages;
+
+    private List<UserGroups> groupUsersList;
+
+    private SnackbarStack snackbar;
+        private const string successMessage = "Changes saved succssfully";
+        private const string discardMessage = "Changes were reverted";
+        private const string errorMessage = "An Error occured";
+
+    private Modal modalRef;
+
+    private ClaimsPrincipal _userClaims;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private DbUser _activeUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        createdGroup = new UserGroup();
+        var users = await Context.Students.ToListAsync();
+        groups = await Context.UserGroups.Include(g => g.Group).ThenInclude(l => l.Leader).Include(u => u.User).ToListAsync();
+        _professors = users.Where(s => s.RoleId == 2).ToList();
+        _students = users.Where(s => s.RoleId == 3).ToList();
+        _messages = await Context.Recipients.Include(x => x.Sender).Include(x => x.Group).Include(x => x.Message).ToListAsync();
+        _activeUser = Context.Students.FirstOrDefault(x => x.Email == _userClaims.FindFirstValue(ClaimTypes.Email));
+            selectedGroup = groups.FirstOrDefault();
+        removedGroups = new List<UserGroups>();
+        addedUsers = new List<UserGroups>();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await Provider.GetAuthenticationStateAsync();
+        _userClaims = authState.User;
+    }
+
+    private void OnSelectedValueChanged(int value)
+    {
+        selectedGroup = Context.UserGroups.FirstOrDefault(g => g.GroupId == value);
+    }
+
+    private void UserAddChange(object obj)
+    {
+        if (obj is DbUser user && groupUsersList != null)
+        {
+            addedUsers.Add(new UserGroups() {GroupId = selectedGroup.GroupId, UserId = user.UserId});
+            groups.Add(new UserGroups() {Group = selectedGroup.Group, GroupId = selectedGroup.GroupId, User = user, UserId = user.UserId});
+        }
+    }
+
+    private void SaveChangesClicked()
+    {
+        try
+        {
+            if (groupDetailsChanged)
+            {
+                Context.UserGroups.Update(selectedGroup);
+                actionMade = true;
+            }
+            if (removedGroups.Count > 0)
+            {
+                Context.UserGroups.RemoveRange(removedGroups);
+                actionMade = true;
+            }
+            if (addedUsers.Count > 0)
+            {
+                Context.UserGroups.AddRange(addedUsers);
+                actionMade = true;
+            }
+
+            Context.UserGroupSet.Update(selectedGroup.Group);
+
+            if (actionMade)
+                Context.SaveChangesAsync();
+
+
+            snackbar.Push(successMessage);
+        }
+        catch (Exception e)
+        {
+            snackbar.Push(errorMessage);
+        }
+    }
+
+    private void DiscardChangesClicked()
+    {
+        if (removedGroups.Count > 0)
+        {
+            groups.AddRange(removedGroups);
+            removedGroups.Clear();
+        }
+        snackbar.Push(discardMessage);
+    }
+
+    private void ApplyGroupDetails()
+    {
+        if (changedLeader != null)
+        {
+            selectedGroup.Group.Leader = changedLeader;
+            groupDetailsChanged = true;
+        }
+        if (!string.IsNullOrEmpty(changedGroupName))
+        {
+            selectedGroup.Group.GroupName = changedGroupName;
+            groupDetailsChanged = true;
+        }
+        modalRef.Hide();
+    }
+
+    private void LeaderChange(object obj)
+    {
+        if (obj is DbUser user && groupUsersList != null)
+        {
+            selectedGroup.Group.Leader = user;
+            actionMade = true;
+        }
+    }
+
+    private void GroupNameChanged(string newName)
+    {
+        if (!string.IsNullOrEmpty(newName))
+        {
+            selectedGroup.Group.GroupName = newName;
+            actionMade = true;
+        }
+    }
+
+
+    private void OnSelectedTabChanged(string name)
+    {
+        selectedTab = name;
+    }
+
+    private async Task SendMessage()
+    {
+        try
+        {
+            PrivateMessage msg = new PrivateMessage()
+            {
+                MessageContent = _messageText, TimeSent = DateTime.Now
+            };
+            await Context.PrivateMessages.AddAsync(msg);
+
+            MessageRecipient rec = new MessageRecipient()
+            {
+                Sender = _activeUser,
+                Group = selectedGroup.Group,
+                Message = msg
+            };
+
+            await Context.Recipients.AddAsync(rec);
+            await Context.SaveChangesAsync();
+
+            _messages.Add(rec);
+            _messageText = string.Empty;
+            StateHasChanged();
+        }
+        catch (Exception e)
+        {
+            snackbar.Push("Error occured.", SnackbarColor.Danger);
+        }
+    }
+
+    private void AddGroup()
+    {
+        if (_addingGroup)
+        {
+            Context.UserGroupSet.Add(createdGroup);
+            Context.UserGroups.AddRangeAsync(_addedGroupUsers);
+            Context.SaveChangesAsync();
+            _addingGroup = false;
+            groups.AddRange(_addedGroupUsers);
+            _addedGroupUsers.Clear();
+            createdGroup = new UserGroup();
+        }
+        else
+        {
+            _addedGroupUsers = new List<UserGroups>();
+            AddUser();
+            _addingGroup = true;
+        }
+    }
+
+    private Task AddedGroupProfessorChanged(object obj)
+    {
+        if (obj is DbUser user)
+        {
+            _professorOfAddedGroup = user;
+            createdGroup.Leader = user;
+        }
+        return Task.CompletedTask;
+    }
+
+    private void AddUser()
+    {
+        _addedGroupUsers.Add(new UserGroups() {Group = createdGroup});
+    }
+
+    private Task UserAddedToGroup(object arg)
+    {
+        if (arg is DbUser user)
+        {
+            var last = _addedGroupUsers.Last();
+            last.User = user;
+            last.Group = createdGroup;
+        }
+        return Task.CompletedTask;
+    }
+
+}

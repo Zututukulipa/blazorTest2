@@ -1,0 +1,314 @@
+@using ElsaWebApp.Models.Database
+@using System.Security.Claims
+@using System.IO
+@using System.Reflection
+@using Blazorise.Snackbar
+@using ElsaWebApp.Controllers.DataAccess
+@inject NavigationManager NavigationManager
+@inject SchooldContext Context;
+@inject AuthenticationStateProvider Provider;
+
+<Tabs SelectedTab="@_selectedTab" SelectedTabChanged="@OnSelectedTabChanged">
+    <Items>
+        <Tab Name="Overview">Overview</Tab>
+        @{
+            if (SelectedUser.UserGroups != null && SelectedUser.UserGroups.Count > 0)
+            {
+                <Tab Name="Groups">Groups</Tab>
+            }
+        }
+        @{
+            if (SelectedUser.UserSubjects != null && SelectedUser.UserSubjects.Count > 0)
+            {
+                <Tab Name="Subjects">Subjects</Tab>
+            }
+        }
+        @{
+            if (UserClaims != null)
+                if (UserClaims.FindFirst(c => c.Type == ClaimTypes.Role)?.Value == "administrator")
+                {
+                    <Tab Name="Change Password">Change Password</Tab>
+                }
+        }
+        <Tab Name="Change Profile Picture">Change Profile Picture</Tab>
+
+    </Items>
+    <Content>
+        <TabPanel Name="Overview">
+            <Field Horizontal="true">
+                <FieldLabel ColumnSize="ColumnSize.Is2">Firstname</FieldLabel>
+                <FieldBody ColumnSize="ColumnSize.Is10">
+                    <Validation UsePattern="true">
+                        <TextEdit Plaintext="@_isProfileViewed" Disabled="@_isProfileEditable" Pattern=".+" @bind-Text="@SelectedUser.Firstname">
+                            <ValidationError>Field cannot be empty</ValidationError>
+                        </TextEdit>
+                    </Validation>
+                </FieldBody>
+            </Field>
+
+            <Field Horizontal="true">
+                <FieldLabel ColumnSize="ColumnSize.Is2">Surname</FieldLabel>
+                <FieldBody ColumnSize="ColumnSize.Is10">
+                    <Validation UsePattern="true">
+                        <TextEdit Plaintext="@_isProfileViewed" Disabled="@_isProfileEditable" Pattern=".+" @bind-Text="@SelectedUser.Surname">
+                            <ValidationError>Field cannot be empty</ValidationError>
+                        </TextEdit>
+                    </Validation>
+                </FieldBody>
+            </Field>
+            <Field Horizontal="true">
+                <FieldLabel ColumnSize="ColumnSize.Is2">E-Mail</FieldLabel>
+                <FieldBody ColumnSize="ColumnSize.Is10">
+                    <TextEdit Plaintext="@_isProfileViewed" Disabled="@_isProfileEditable" Role="TextRole.Email" @bind-Text="@SelectedUser.Email"/>
+                </FieldBody>
+            </Field>
+            <Field Horizontal="true">
+                <FieldLabel ColumnSize="ColumnSize.Is2">Phone</FieldLabel>
+                <FieldBody ColumnSize="ColumnSize.Is10">
+                    <Validation UsePattern="true">
+                        <TextEdit Pattern="00420\d{9}" Plaintext="@_isProfileViewed" Disabled="@_isProfileEditable" @bind-Text="@SelectedUser.Phone">
+                            <ValidationError>Please enter phone in correct format! Example: 00420500100200</ValidationError>
+                        </TextEdit>
+                    </Validation>
+                </FieldBody>
+            </Field>
+            <Field Horizontal="true">
+                <FieldLabel ColumnSize="ColumnSize.Is2">Birth Date</FieldLabel>
+                <FieldBody ColumnSize="ColumnSize.Is10">
+                    <DateEdit Plaintext="@_isProfileViewed" Disabled="@_isProfileEditable" TValue="DateTime" @bind-Date="@SelectedUser.BirthDate"/>
+                </FieldBody>
+            </Field>
+
+            @if (UserClaims != null && UserClaims.FindFirst(c => c.Type == ClaimTypes.Role)?.Value == "administrator")
+            {
+                <Field Horizontal="true">
+                    <FieldLabel ColumnSize="ColumnSize.Is2">Role</FieldLabel>
+                    <FieldBody ColumnSize="ColumnSize.Is10">
+                        <NumericEdit Plaintext="@_isProfileViewed" Disabled="@_isProfileEditable" @bind-Value="@SelectedUser.RoleId"/>
+                    </FieldBody>
+                </Field>
+            }
+            @{
+                if (SelectedUser.RoleId == 3 && SelectedUser.StudyYear > 0)
+                {
+                    <Field>
+                        <FieldLabel ColumnSize="ColumnSize.Is2">Study Year</FieldLabel>
+                        <FieldBody ColumnSize="ColumnSize.Is10">
+                            <NumericEdit Plaintext="@_isProfileViewed" Disabled="@_isProfileEditable" TValue="int" @bind-Value="@SelectedUser.StudyYear"/>
+                        </FieldBody>
+                    </Field>
+                }
+            }
+            @if (SelectedUser.Address != null)
+            {
+                <hr/>
+                <Field Horizontal="true">
+                    <FieldLabel ColumnSize="ColumnSize.Is2">Street</FieldLabel>
+                    <FieldBody ColumnSize="ColumnSize.Is10">
+                        <TextEdit Plaintext="@_isProfileViewed" Disabled="@_isProfileEditable" Pattern=".+" @bind-Value="@SelectedUser.Address.Street">
+                        </TextEdit>
+                    </FieldBody>
+                </Field>
+                <Field Horizontal="true">
+                    <FieldLabel ColumnSize="ColumnSize.Is2">House Number</FieldLabel>
+                    <FieldBody ColumnSize="ColumnSize.Is10">
+                        <TextEdit Plaintext="@_isProfileViewed" Disabled="@_isProfileEditable" Pattern="\d+" @bind-Value="@SelectedUser.Address.HouseNr">
+                        </TextEdit>
+                    </FieldBody>
+                </Field>
+                <Field Horizontal="true">
+                    <FieldLabel ColumnSize="ColumnSize.Is2">City</FieldLabel>
+                    <FieldBody ColumnSize="ColumnSize.Is10">
+                        <TextEdit Plaintext="@_isProfileViewed" Disabled="@_isProfileEditable" Pattern="\d+" @bind-Value="@SelectedUser.Address.City"/>
+                    </FieldBody>
+                </Field>
+                <Field Horizontal="true">
+                    <FieldLabel ColumnSize="ColumnSize.Is2">ZIP</FieldLabel>
+                    <FieldBody ColumnSize="ColumnSize.Is10">
+                        <TextEdit Plaintext="@_isProfileViewed" Disabled="@_isProfileEditable" Pattern="\d+" @bind-Value="@SelectedUser.Address.Zip">
+                        </TextEdit>
+                    </FieldBody>
+                </Field>
+            }
+        </TabPanel>
+        @{
+            if (SelectedUser.UserGroups != null && SelectedUser.UserGroups.Count > 0)
+            {
+                <TabPanel Name="Groups">
+                    @{
+                        var uGroups = SelectedUser.UserGroups.GroupBy(g => g.Group);
+                        foreach (var group in uGroups)
+                        {
+                            <h4>@group.Key.GroupName</h4>
+                            <a href="Profile/@group.Key.LeaderId">@group.Key.Leader.Firstname @group.Key.Leader.Surname</a>
+                            <Table Hoverable="true">
+                                <TableHeader ThemeContrast="ThemeContrast.Dark">
+                                    <TableRow>
+                                        <TableHeaderCell>Firstname</TableHeaderCell>
+                                        <TableHeaderCell>Surname</TableHeaderCell>
+                                        <TableHeaderCell>Email</TableHeaderCell>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    @{
+                                        var groupUsers = group.AsEnumerable();
+                                        foreach (var user in groupUsers)
+                                        {
+                                            var path = $"Profile/{user.UserId}";
+                                            <TableRow Clicked="() => NavigationManager.NavigateTo(path)">
+                                                <TableRowCell>@user.User.Firstname</TableRowCell>
+                                                <TableRowCell>@user.User.Surname</TableRowCell>
+                                                <TableRowCell>@user.User.Email</TableRowCell>
+                                            </TableRow>
+                                        }
+                                    }
+                                </TableBody>
+                            </Table>
+                        }
+
+                    }
+                </TabPanel>
+            }
+        }
+        @{
+            if (SelectedUser.UserGroups != null && SelectedUser.UserGroups.Count > 0)
+            {
+                <TabPanel Name="Subjects">
+                    @{
+                        var subjects = SelectedUser.UserSubjects;
+                        <DataGrid TItem="UserSubjects" @bind-SelectedRow="@SelectedSubject"
+                                  Data="subjects" Editable="true" EditMode="DataGridEditMode.Form">
+                            <DataGridColumn TItem="UserSubjects" Field="Subject.SubjectName" Caption="Name" Editable="true"/>
+                            <DataGridColumn TItem="UserSubjects" Field="Subject.MaxCapacity" Caption="Max Capacity" Editable="true"/>
+                            <DataGridColumn TItem="UserSubjects" Field="Subject.CurrentCapacity" Caption="Current Capacity" Editable="true"/>
+                            <DataGridCommandColumn TItem="UserGroups"/>
+                        </DataGrid>
+                    }
+                </TabPanel>
+            }
+        }
+        @{
+            if (UserClaims != null)
+                if (UserClaims.FindFirst(c => c.Type == ClaimTypes.Role)?.Value == "administrator" && @_isProfileViewed == false)
+                {
+                    <TabPanel Name="Change Password">
+                        <Field Horizontal="true">
+                            <FieldLabel ColumnSize="ColumnSize.Is2">New Password</FieldLabel>
+                            <FieldBody ColumnSize="ColumnSize.Is10">
+                                <TextEdit @bind-Talue="@_password" Placeholder="New password"/>
+                            </FieldBody>
+                        </Field>
+                    </TabPanel>
+                    <TabPanel Name="Change Profile Picture">
+                        <FileEdit Changed="@OnChanged" Filter=".jpg"/>
+                    </TabPanel>
+                }
+        }
+    </Content>
+</Tabs>
+@if (_canEdit)
+{
+    if (!_isProfileViewed)
+    {
+        <Button Clicked="SaveProfileChanges" Color="Color.Secondary">Save Changes</Button>
+    }
+    else
+    {
+        <Button Clicked="() => { _isProfileViewed = false; _isProfileEditable = false;}" Color="Color.Secondary">Edit Profile</Button>
+    }
+}
+<hr/>
+<SnackbarStack @ref="snackbar" Location="SnackbarStackLocation.Right"/>
+
+@code {
+
+    [Parameter]
+    public DbUser SelectedUser { get; set; }
+
+    [Parameter]
+    public UserSubjects SelectedSubject { get; set; }
+
+    public ClaimsPrincipal UserClaims { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private SnackbarStack snackbar;
+
+    private string _password = string.Empty;
+
+    private string _selectedTab = "Overview";
+
+    private bool _canEdit;
+    private bool _isProfileViewed = true;
+    private bool _isProfileEditable = true;
+
+    private void OnSelectedTabChanged(string name)
+    {
+        _selectedTab = name;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        if (SelectedUser?.Email == UserClaims.FindFirstValue(ClaimTypes.Email) || UserClaims.FindFirst(c => c.Type == ClaimTypes.Role)?.Value == "administrator")
+            _canEdit = true;
+
+        await base.OnInitializedAsync();
+    }
+
+    async Task OnChanged(FileChangedEventArgs e)
+    {
+        try
+        {
+            foreach (var file in e.Files)
+            {
+                await using var stream = new MemoryStream();
+                await file.WriteToStreamAsync(stream);
+
+                var buffer = stream.ToArray();
+                SelectedUser.ProfilePicture = buffer;
+                await Context.SaveChangesAsync();
+            }
+        }
+        catch (Exception exc)
+        {
+            snackbar.Push("Image size is too big (up to 65Kb)", SnackbarColor.Danger);
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await Provider.GetAuthenticationStateAsync();
+        UserClaims = authState.User;
+    }
+
+    private void SaveProfileChanges()
+    {
+        if (SelectedUser != null)
+        {
+            if (!string.IsNullOrWhiteSpace(_password))
+                SelectedUser.UserPassword = _password;
+            bool invalid = SelectedUser.Address == null || string.IsNullOrEmpty(SelectedUser.Email) 
+                           || string.IsNullOrEmpty(SelectedUser.Firstname)
+                           || string.IsNullOrEmpty(SelectedUser.Surname) || string.IsNullOrEmpty(SelectedUser.Phone)
+                           || string.IsNullOrEmpty(SelectedUser.UserPassword) || string.IsNullOrEmpty(SelectedUser.Address.City)
+                           || string.IsNullOrEmpty(SelectedUser.Address.Street) || string.IsNullOrEmpty(SelectedUser.Address.Zip)
+                           || string.IsNullOrEmpty(SelectedUser.Address.HouseNr);
+
+            if (invalid)
+                snackbar.Push("Please fill all fields", SnackbarColor.Danger);
+            else
+            {
+                Context.Students.Update(SelectedUser);
+                Context.SaveChanges();
+                _isProfileViewed = true;
+                _isProfileEditable = true;
+            }
+        }
+    }
+
+}

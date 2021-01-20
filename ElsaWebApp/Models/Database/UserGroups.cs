@@ -8,13 +8,11 @@ namespace ElsaWebApp.Models.Database
         [Column("GROUP_ID")]
         public int GroupId { get; set; }
         
-        [ForeignKey("GroupId")]
-        public UserGroup Group { get; set; }
+        public virtual UserGroup Group { get; set; }
         
         [Column("USER_ID")]
         public int UserId { get; set; }
         
-        [ForeignKey("UserId")]
-        public DbUser User { get; set; }
+        public virtual DbUser User { get; set; }
     }
 }

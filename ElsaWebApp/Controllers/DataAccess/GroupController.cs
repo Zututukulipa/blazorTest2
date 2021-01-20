@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ElsaWebApp.Controllers.DataAccess
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class GroupController
     {
         private SchooldContext Context { get; }

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using DataFiller;
 using ElsaWebApp.Models.Database;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Internal;
 namespace ElsaWebApp.Controllers.DataAccess
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class SubjectController
     {
         private SchooldContext Context { get; }
@@ -88,11 +87,11 @@ namespace ElsaWebApp.Controllers.DataAccess
         }
 
         [HttpPost("pairSubjectStudentRange")]
-        public async Task<ActionResult> InsertSubject(List<UserSubjects> subjects)
+        public async Task<ActionResult> InsertSubject(List<UserSubjects> pairs)
         {
             try
             {
-                await Context.UserSubjects.AddRangeAsync(subjects);
+                await Context.UserSubjects.AddRangeAsync(pairs);
                 await Context.SaveChangesAsync();
                 return new OkResult();
             }

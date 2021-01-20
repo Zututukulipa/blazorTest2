@@ -1,0 +1,211 @@
+@page "/Users"
+@using ElsaWebApp.Models.Database
+@using ElsaWebApp.Controllers.DataAccess
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@inject SchooldContext Context;
+@inject Blazored.SessionStorage.ISessionStorageService SessionStorageService;
+@inject AuthenticationStateProvider Provider;
+@inject NavigationManager NavigationManager;
+
+
+<h3>Users</h3>
+<UserDetailTabs SelectedUser="@selectedUser" SelectedSubject="null"/>
+<Accordion>
+<Collapse Visible="@collapse1Visible">
+    <CollapseHeader>
+        <Heading Size="HeadingSize.Is5">
+            <Button Clicked="@(() => collapse1Visible = !collapse1Visible)">User Information</Button>
+        </Heading>
+    </CollapseHeader>
+    <CollapseBody>
+        <Form>
+            <Button Color="Color.Primary" Clicked="@SaveAuthor" Type="ButtonType.Submit">Save Changes</Button>
+        </Form>
+
+    </CollapseBody>
+</Collapse>
+<Collapse Visible="@collapse2Visible">
+    <CollapseHeader>
+        <Heading Size="HeadingSize.Is5">
+            <Button Clicked="@(() => collapse2Visible = !collapse2Visible)">Application Users</Button>
+        </Heading>
+    </CollapseHeader>
+    <CollapseBody>
+        @if (filteredUserList != null)
+        {
+            <Check Inline="true" TValue="bool" @bind-Checked="@filterUsersWithSubjects">Subjects</Check>
+            <Check Inline="true" TValue="bool" @bind-Checked="@filterUsersWithGroups">Groups</Check>
+            <Button Color="Color.Info" Clicked="@ApplyUserFilter">Apply Filters</Button>
+
+            <DataGrid TItem="DbUser"
+                      Data="@filteredUserList"
+                      @bind-SelectedRow="@selectedUser"
+                      PageSize="10"
+                      Filterable="true"
+                      FilterMethod="DataGridFilterMethod.StartsWith"
+                      ShowPager="true" EditMode="DataGridEditMode.Popup"
+                      RowRemoved="UserRemoved"
+                      Editable="true"
+                      DetailRowTrigger="@((item) => item.UserId == selectedUser?.UserId)">
+                <DetailRowTemplate>
+                    @{
+                        if (selectedUser.UserSubjects?.Count > 0 || selectedUser.UserGroups?.Count > 0)
+                        {
+                            <Accordion>
+                                @if (selectedUser.UserGroups?.Count > 0)
+                                {
+                                    <Collapse Visible="@groupsVisible">
+                                        <CollapseHeader>
+                                            <Heading Size="HeadingSize.Is6">
+                                                <Button Clicked="@(() => groupsVisible = !groupsVisible)">Groups</Button>
+                                            </Heading>
+                                        </CollapseHeader>
+                                        <CollapseBody>
+                                            @{
+                                                var groups = (context as DbUser).UserGroups;
+                                                    <DataGrid TItem="UserGroups" @bind-SelectedRow="@selectedGroup"
+                                                              Data="groups">
+                                                        <DataGridColumn TItem="UserGroups" Field="Group.GroupId" Caption="#"/>
+                                                        <DataGridColumn TItem="UserGroups" Field="Group.GroupName" Caption="Name"/>
+                                                        <DataGridColumn TItem="UserGroups" Field="Group.Leader.Email" Caption="Leader"/>
+                                                        <DataGridCommandColumn TItem="UserGroups"/>
+                                                    </DataGrid>
+                                            }
+                                        </CollapseBody>
+                                    </Collapse>
+                                }
+                                @if (selectedUser.UserSubjects?.Count > 0)
+                                {
+                                    <Collapse Visible="@subjectsVisible">
+                                        <CollapseHeader>
+                                            <Heading Size="HeadingSize.Is6">
+                                                <Button Clicked="@(() => subjectsVisible = !subjectsVisible)">Subjects</Button>
+                                            </Heading>
+                                        </CollapseHeader>
+                                        <CollapseBody>
+                                            @{
+                                                var subjects = (context as DbUser).UserSubjects;
+                                                    <DataGrid TItem="UserSubjects" @bind-SelectedRow="@selectedSubject"
+                                                              Data="subjects" Editable="true" EditMode="DataGridEditMode.Form">
+                                                        <DataGridColumn TItem="UserSubjects" Field="Subject.SubjectName" Caption="Name" Editable="true"/>
+                                                        <DataGridColumn TItem="UserSubjects" Field="Subject.MaxCapacity" Caption="Max Capacity" Editable="true"/>
+                                                        <DataGridColumn TItem="UserSubjects" Field="Subject.CurrentCapacity" Caption="Current Capacity" Editable="true"/>
+                                                        <DataGridCommandColumn TItem="UserGroups"/>
+                                                    </DataGrid>
+                                            }
+                                        </CollapseBody>
+                                    </Collapse>
+                                }
+                            </Accordion>
+                        }
+                    }
+                </DetailRowTemplate>
+                <ChildContent>
+                    <DataGridCommandColumn TItem="DbUser">
+                        <NewCommandTemplate>
+                            <Button Color="Color.Success" Clicked="@context.Clicked">New</Button>
+                        </NewCommandTemplate>
+                        <EditCommandTemplate>
+
+                        </EditCommandTemplate>
+                        <DeleteCommandTemplate>
+                            <Button Color="Color.Danger" Clicked="@context.Clicked">Delete</Button>
+                        </DeleteCommandTemplate>
+                    </DataGridCommandColumn>
+                    <DataGridColumn TItem="DbUser" Field="@nameof(DbUser.UserId)" Caption="#" Sortable="true"/>
+                    <DataGridColumn TItem="DbUser" Field="@nameof(DbUser.Firstname)" Caption="First Name" Editable="true"/>
+                    <DataGridColumn TItem="DbUser" Field="@nameof(DbUser.Surname)" Caption="Last Name" Editable="true"/>
+                    <DataGridColumn TItem="DbUser" Field="@nameof(DbUser.Email)" Caption="E-mail" Editable="true"/>
+                    <DataGridColumn TItem="DbUser" Field="Address.City" Caption="City" Editable="true"/>
+                    <DataGridColumn TItem="DbUser" Field="Address.Street" Caption="Street" Editable="true"/>
+                    <DataGridColumn TItem="DbUser" Field="Address.HouseNr" Caption="House Nr." Editable="true"/>
+                    <DataGridColumn TItem="DbUser" Field="Address.Zip" Caption="Zip" Editable="true"/>
+                </ChildContent>
+            </DataGrid>
+        }
+    </CollapseBody>
+</Collapse>
+</Accordion>
+
+
+@code {
+    private DbUser selectedUser = new DbUser();
+    private UserGroups selectedGroup = new UserGroups();
+    private UserSubjects selectedSubject = new UserSubjects();
+    private List<DbUser> userList { get; set; }
+    private List<DbUser> filteredUserList { get; set; }
+
+    private bool collapse1Visible = false;
+    private bool collapse2Visible = true;
+    private bool subjectsVisible = false;
+    private bool groupsVisible = false;
+    private bool filterUsersWithSubjects = false;
+    private bool filterUsersWithGroups = false;
+
+    private Modal modalRef;
+    private UserGroups _selectionGroup;
+
+
+    private ClaimsPrincipal _userClaims;
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        userList = Context.Students
+            .Include(i => i.UserGroups)
+            .ThenInclude(g => g.Group)
+            .Include(i => i.UserSubjects)
+            .ThenInclude(s => s.Subject)
+            .Include(a => a.Address)
+            .ToListAsync().Result;
+        filteredUserList = userList;
+        await GetClaimsPrincipalData();
+        await base.OnInitializedAsync();
+    }
+
+    private void SaveAuthor()
+    {
+        Context.Students.Update(selectedUser);
+        Context.SaveChanges();
+    }
+
+    private void UserRemoved(DbUser value)
+    {
+    //TODO create procedure to remove users from database!
+        Context.Students.Remove(value);
+    // Context.SaveChanges();
+    }
+
+    private void UserRemovedFromGroup(UserGroups value)
+    {
+        Context.UserGroups.Remove(value);
+        Context.SaveChanges();
+    }
+
+    private void UserUpdated(SavedRowItem<DbUser, Dictionary<string, object>> userRow)
+    {
+        Context.Students.Update(userRow.Item);
+        Context.SaveChanges();
+    }
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await Provider.GetAuthenticationStateAsync();
+        _userClaims = authState.User;
+    }
+
+    private void ApplyUserFilter()
+    {
+        if (filterUsersWithGroups && filterUsersWithSubjects)
+            filteredUserList = userList.FindAll(u => u.UserGroups.Any() && u.UserSubjects.Any()).ToList();
+        else if (filterUsersWithGroups && !filterUsersWithSubjects)
+            filteredUserList = userList?.FindAll(u => u.UserGroups.Count > 0).ToList();
+        else if (!filterUsersWithGroups && filterUsersWithSubjects)
+            filteredUserList = userList?.FindAll(u => u.UserSubjects.Count > 0).ToList();
+        else
+            filteredUserList = userList;
+    }
+
+}

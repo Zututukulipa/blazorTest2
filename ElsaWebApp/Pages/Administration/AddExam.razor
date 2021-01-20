@@ -1,0 +1,232 @@
+@page "/AddExam"
+@using ElsaWebApp.Models.Database
+@using ElsaWebApp.Controllers.DataAccess
+@using System.Security.Claims
+@using Blazorise.Snackbar
+@using Microsoft.EntityFrameworkCore
+@inject SchooldContext Context;
+@inject Blazored.SessionStorage.ISessionStorageService SessionStorageService;
+@inject AuthenticationStateProvider Provider;
+@inject NavigationManager NavigationManager;
+
+<h3>AddExam</h3>
+<hr/>
+<Heading Size="HeadingSize.Is4">Subject</Heading>
+
+<Select TValue="int" @bind-SelectedValue="@SelectedSubjectId">
+    @{
+        if (_userSubjects != null)
+            foreach (var subject in _userSubjects)
+            {
+                <SelectItem Value="@subject.SubjectId">@subject.SubjectName</SelectItem>
+            }
+    }
+</Select>
+@{
+    if (_renderQuestions)
+    {
+        var now = DateTime.Now;
+        <hr/>
+        <Field>
+            <FieldLabel>Exam Name</FieldLabel>
+            <TextEdit @bind-Text="@_addedExam.ExamName"/>
+        </Field>
+        <Field>
+            <FieldLabel>Exam start</FieldLabel>
+            <DateEdit @bind-Date="@_addedExam.ExamStart" Min="now" Max="now.AddYears(3)" Placeholder="Question description"/>
+        </Field>
+        <Field Horizontal="true">
+            <FieldLabel>Time limit?</FieldLabel>
+            <Check TValue="bool" Checked="@_hasTimeLimit" CheckedChanged="@OnTimeLimitChanged" class="oi-check"/>
+        </Field>
+        if (_hasTimeLimit)
+        {
+            <Field>
+                <FieldLabel>Exam End</FieldLabel>
+                <DateEdit @bind-Date="@_addedExam.ExamEnd" Min="@now" Max="now.AddYears(3)" Placeholder="Question description"/>
+            </Field>
+        }
+        <Field Horizontal="true">
+            <FieldLabel>Password protected?</FieldLabel>
+            <Check TValue="bool" Checked="@_hasPassword" CheckedChanged="@OnPasswordChanged" class="oi-check"/>
+        </Field>
+        if (_hasPassword)
+        {
+            <Field>
+                <FieldLabel>Password</FieldLabel>
+                <TextEdit @bind-Text="@_addedExam.ExamPassword"/>
+            </Field>
+        }
+        
+        <Heading Size="HeadingSize.Is4">Questions</Heading>
+        <hr/>
+        @foreach (var question in _questions)
+        {
+            <Field>
+                <FieldLabel>Question Description</FieldLabel>
+                <MemoEdit Placeholder="Question description" @bind-Text="@question.Key.Description"/>
+            </Field>
+            <Field>
+                <FieldLabel>Points</FieldLabel>
+                <NumericEdit TValue="int" @bind-Value="@question.Key.Points"/>
+            </Field>
+            <Select TValue="int" @bind-SelectedValue="@question.Key.TypeId">
+                <SelectItem Value="1">Compulsory</SelectItem>
+                <SelectItem Value="2">Extra</SelectItem>
+            </Select>
+
+            <Heading Size="HeadingSize.Is5">Answers</Heading>
+            foreach (var answer in question.Value)
+            {
+                <Addons>
+                    <Addon AddonType="AddonType.Start">
+                        <Button Color="Color.Danger" Clicked="() => {if (question.Value.Count > 1){question.Value.Remove(answer);}}">
+                            <Icon Name="IconName.Remove"/>
+                        </Button>
+                    </Addon>
+                    <Addon AddonType="AddonType.Body">
+                        <TextEdit Placeholder="Question answer" @bind-Text="@answer.AnswerContent"></TextEdit>
+                    </Addon>
+                    <Addon AddonType="AddonType.End">
+                        <Select TValue="int" @bind-SelectedValue="@answer.Correct">
+                                        <SelectItem Value="1">Correct</SelectItem>
+                                        <SelectItem Value="0">Wrong</SelectItem>
+                                    </Select>
+                    </Addon>
+                </Addons>
+            }
+            <Button Color="Color.Success" Block="true" Clicked="() => question.Value.Add(new ExamAnswer(){Question = question.Key})">
+                <Icon Name="IconName.Add"/>
+            </Button>
+        }
+        <Button Color="Color.Secondary" Block="true" Clicked="() => _questions.Add(new ExamQuestion(){TypeId = 1}, new List<ExamAnswer>())">
+            <Icon Name="IconName.Add"/> Question <Icon Name="IconName.Add"/>
+        </Button>
+        
+        <hr/>
+
+        if (_questions.Values.Count > 0)
+        {
+            <Button Color="Color.Primary" Outline="true" Block="true" Clicked="@SaveExam">
+                Save Exam
+            </Button>
+        }
+        else
+        {
+            <Button Color="Color.Primary" Disabled="true" Outline="true" Block="true">
+                Save Exam
+            </Button>
+        }
+    }
+    <SnackbarStack @ref="snackbar" Location="SnackbarStackLocation.Right"/>
+}
+
+@code {
+    private SnackbarStack snackbar;
+
+    private Exam _addedExam = new Exam() {ExamStart = DateTime.Now, TypeId = 1};
+
+    private DbUser _activeUser;
+
+    private Subject _examSubject;
+
+    private Dictionary<ExamQuestion, List<ExamAnswer>> _questions
+        = new Dictionary<ExamQuestion, List<ExamAnswer>>();
+
+    private bool _renderQuestions;
+    private bool _hasPassword;
+    private bool _hasTimeLimit;
+
+    private int _selectedSubjectId;
+
+    private int SelectedSubjectId
+    {
+        get => _selectedSubjectId;
+        set
+        {
+            _selectedSubjectId = value;
+            _examSubject = Context.Subjects.FirstOrDefault(x => x.SubjectId == _selectedSubjectId);
+            _addedExam.Subject = _examSubject;
+            _renderQuestions = true;
+            StateHasChanged();
+        }
+    }
+
+    private List<Subject> _userSubjects;
+
+    private ClaimsPrincipal _userClaims;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        _activeUser = Context.Students.FirstOrDefault(x => x.Email == _userClaims.FindFirst(ClaimTypes.Email).Value);
+        if (_activeUser != null && _activeUser.RoleId == 2)
+        {
+            _userSubjects = await Context.Subjects.Where(x => x.Garant == _activeUser).ToListAsync();
+        }
+        else if (_activeUser != null && _activeUser.RoleId == 1)
+        {
+            _userSubjects = await Context.Subjects.ToListAsync();
+        }
+        await base.OnInitializedAsync();
+    }
+
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await Provider.GetAuthenticationStateAsync();
+        _userClaims = authState.User;
+    }
+
+    private Task OnTimeLimitChanged(bool arg)
+    {
+        _hasTimeLimit = arg;
+        if (!arg)
+            _addedExam.ExamEnd = null;
+        else
+            _addedExam.ExamEnd = DateTime.Now;
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnPasswordChanged(bool arg)
+    {
+        _hasPassword = arg;
+        if (!arg)
+            _addedExam.ExamPassword = null;
+
+        return Task.CompletedTask;
+    }
+
+    private void SaveExam()
+    {
+        try
+        {
+            _addedExam.Creator = _activeUser;
+            Context.Exams.Add(_addedExam);
+            foreach (var question in _questions)
+            {
+                if (question.Value.Count > 0)
+                {
+                    question.Key.Exam = _addedExam;
+                    Context.ExamQuestions.Add(question.Key);
+
+                    Context.ExamAnswers.AddRange(question.Value);
+                }
+                else
+                {
+                    throw new Exception("Error occured");
+                }
+            }
+            Context.SaveChanges();
+        }
+        catch (Exception e)
+        {
+            snackbar.Push("Error occured.", SnackbarColor.Danger);
+        }
+    }
+
+}

@@ -7,12 +7,10 @@ namespace ElsaWebApp.Models.Database
     {
         [Column("STUDENT_ID")]
         public int StudentId { get; set; }
-        [ForeignKey("StudentId")]
         public DbUser Student { get; set; }
         
         [Column("SUBJECT_ID")]
         public int SubjectId { get; set; }
-        [ForeignKey("SubjectId")]
         public Subject Subject { get; set; }
 
     }

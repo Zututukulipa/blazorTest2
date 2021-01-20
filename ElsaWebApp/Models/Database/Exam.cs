@@ -13,9 +13,6 @@ namespace ElsaWebApp.Models.Database
         [Column("EXAM_NAME")]
         public string ExamName { get; set; }
 
-        [Column("EXAM_UID")]
-        public string ExamUid { get; set; }
-
         [Column("EXAM_PASSWORD")]
         public string ExamPassword { get; set; }
 

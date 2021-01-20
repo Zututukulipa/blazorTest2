@@ -28,8 +28,11 @@ namespace ElsaWebApp.Models.Database
         [Column("GARANT_ID")]
         public int GarantId { get; set; }
 
-        public ICollection<UserSubjects> Students { get; set; }
-        public ICollection<ClassroomSubjects> Classrooms { get; set; }
+        [ForeignKey("GarantId")]
+        public DbUser Garant { get; set; }
+
+        public virtual ICollection<UserSubjects> UserSubjects { get; set; }
+        public virtual ICollection<ClassroomSubjects> Classrooms { get; set; }
 
         public override string ToString()
         {

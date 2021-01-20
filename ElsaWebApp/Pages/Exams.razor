@@ -1,0 +1,220 @@
+@page "/Exams"
+@using ElsaWebApp.Controllers.DataAccess
+@using ElsaWebApp.Models.Database
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@inject SchooldContext Context;
+@inject NavigationManager NavigationManager;
+@inject AuthenticationStateProvider Provider;
+
+<h3>Exams</h3>
+<hr/>
+@if(_activeUser != null){
+    <AuthorizeView Roles="administrator, professor">
+        <Authorized>
+            <h4>Add Exam</h4>
+            <Button To="AddExam" Color="Color.Success">Add</Button>
+        </Authorized>
+    </AuthorizeView>
+    <Tabs SelectedTab="@selectedTab" SelectedTabChanged="@OnSelectedTabChanged">
+        <Items>
+            <Tab Name="past">Past Exams</Tab>
+            <Tab Name="active">Active</Tab>
+            <Tab Name="upcoming">Upcoming</Tab>
+        </Items>
+        <Content>
+            <TabPanel Name="past">
+              <Table>
+                      <TableHeader>
+                          <TableRow>
+                              <TableHeaderCell>Exam</TableHeaderCell>
+                              <TableHeaderCell>Start</TableHeaderCell>
+                              <TableHeaderCell>Subject</TableHeaderCell>
+                          </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                          @{
+                              foreach (var exam in Context.Exams.Where(e => e.ExamEnd != null && e.ExamEnd < DateTime.Today).Include(s => s.Subject))
+                              {
+                                  <TableRow>
+                                      <TableRowCell>@exam.ExamName</TableRowCell>
+                                      <TableRowCell>@exam.ExamStart.ToString("d")</TableRowCell>
+                                      <TableRowCell>@exam.Subject.SubjectName</TableRowCell>
+                                  </TableRow>
+                              }
+                          }
+                      </TableBody>
+                  </Table>
+            </TabPanel>
+            <TabPanel Name="active">
+                <Table Hoverable="true">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHeaderCell>Exam</TableHeaderCell>
+                            <TableHeaderCell>Start</TableHeaderCell>
+                            <TableHeaderCell>Subject</TableHeaderCell>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        @{
+                            var exams =  Context.Exams.Where(x => x.ExamStart < DateTime.Today).Include(s => s.Subject).ToList();
+                            var currentExams = new List<Models.Database.Exam>();
+                            var now = DateTime.Now;
+                            foreach (var exam in exams)
+                            {
+                                if (exam.ExamEnd != null)
+                                {
+                                    if(exam.ExamEnd > now)
+                                        currentExams.Add(exam);
+                                }
+                                else
+                                {
+                                 currentExams.Add(exam);   
+                                }
+                            }
+                            foreach (var exam in currentExams)
+                            {
+                                <TableRow Clicked="() => OnExamClicked(exam)">
+                                    <TableRowCell>@exam.ExamName</TableRowCell>
+                                    <TableRowCell>@exam.ExamStart.ToString("d")</TableRowCell>
+                                    <TableRowCell>@exam.Subject.SubjectName</TableRowCell>
+                                </TableRow>
+                            }
+
+                        }
+                    </TableBody>
+                </Table>
+            </TabPanel>
+            <TabPanel Name="upcoming">
+                 <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHeaderCell>Exam</TableHeaderCell>
+                                <TableHeaderCell>Start</TableHeaderCell>
+                                <TableHeaderCell>Subject</TableHeaderCell>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            @{
+                                foreach (var exam in Context.Exams.Where(e => e.ExamStart > DateTime.Now).Include(s => s.Subject))
+                                {
+                                    <TableRow>
+                                        <TableRowCell>@exam.ExamName</TableRowCell>
+                                        <TableRowCell>@exam.ExamStart.ToString("d")</TableRowCell>
+                                        <TableRowCell>@exam.Subject.SubjectName</TableRowCell>
+                                    </TableRow>
+                                }
+                            }
+                        </TableBody>
+                    </Table>
+            </TabPanel>
+        </Content>
+    </Tabs>
+
+   
+    
+    <Modal @ref="modalRef">
+        <ModalBackdrop />
+        <ModalContent IsCentered="true">
+            <ModalHeader>
+                <ModalTitle>Protected</ModalTitle>
+                <CloseButton Clicked="() => modalRef.Hide()" />
+            </ModalHeader>
+            <ModalBody>
+                <Field>
+                    <FieldLabel>Password</FieldLabel>
+                    <TextEdit @ref="passwordRef" @bind-Text="@_enteredPassword"/>
+                </Field>
+            </ModalBody>
+            <ModalFooter>
+                <Button Color="Color.Primary" Clicked="@ProceedToExam">Proceed</Button>
+            </ModalFooter>
+        </ModalContent>
+    </Modal>
+}
+
+@code {
+
+    private Modal modalRef;
+    private TextEdit passwordRef;
+    
+    private ClaimsPrincipal _userClaims;
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private List<Models.Database.Exam> _eligibleExams = new List<Models.Database.Exam>();
+
+    private string _enteredPassword;
+
+    private DbUser _activeUser;
+
+    private Models.Database.Exam _enteringExam;
+    
+    string selectedTab = "active";
+
+   
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        _activeUser = Context.Students.FirstOrDefault(x => x.Email == _userClaims.FindFirstValue(ClaimTypes.Email));
+        if (_activeUser != null)
+        {
+            if (_activeUser.RoleId < 3)
+            {
+                _eligibleExams = await Context.Exams.Include(s => s.Subject).ToListAsync();
+            }
+            else
+            {
+                var userSubjects = await Context.UserSubjects
+                    .Include(x => x.Subject)
+                    .Include(x=> x.Student)
+                    .Where(sub => sub.StudentId == _activeUser.UserId)
+                    .ToListAsync();
+                var exams = await Context.Exams.Include(x => x.Subject).ToListAsync();
+                foreach (var exam in userSubjects.SelectMany(subject => exams.Where(exam => subject.Subject == exam.Subject)))
+                {
+                    _eligibleExams.Add(exam);
+                }
+            }
+        }
+        await base.OnInitializedAsync();
+    }
+    
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await Provider.GetAuthenticationStateAsync();
+        _userClaims = authState.User;
+    }
+
+    private void OnExamClicked(Models.Database.Exam exam)
+    {
+        if (exam.ExamPassword != null)
+        {
+            _enteringExam = exam;
+            modalRef.Show();
+        }
+        else
+        {
+            NavigationManager.NavigateTo($"Exam/{exam.ExamId}/");
+        }
+    }
+
+
+    private void ProceedToExam()
+    {
+        if (_enteringExam.ExamPassword == _enteredPassword)
+            NavigationManager.NavigateTo($"Exam/{_enteringExam.ExamId}/{_enteringExam.ExamPassword}");
+        else
+        {
+            passwordRef.Placeholder = "Invalid Password";
+            _enteredPassword = string.Empty;
+        }
+    }
+    
+    private void OnSelectedTabChanged( string name )
+    {
+        selectedTab = name;
+    }
+
+
+}

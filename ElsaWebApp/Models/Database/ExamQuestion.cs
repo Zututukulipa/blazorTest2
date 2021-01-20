@@ -28,6 +28,6 @@ namespace ElsaWebApp.Models.Database
         [ForeignKey("TypeId")]
         public AnswerType ExamType { get; set; }
 
-        public ICollection<ExamAnswer> Answers { get; set; }
+        public virtual ICollection<ExamAnswer> Answers { get; set; }
     }
 }

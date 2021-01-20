@@ -21,37 +21,37 @@ namespace ElsaWebApp.Services.DataAccess
 
         public async Task<List<Subject>> GetSubjects()
         {
-            var subjects = await _http.GetFromJsonAsync<List<Subject>>("subject/GetAll");
+            var subjects = await _http.GetFromJsonAsync<List<Subject>>("api/subject/GetAll");
             return subjects;
         }
 
         public async Task<Subject> GetSubjectById(int id)
         {
-            var subject = await _http.GetFromJsonAsync<Subject>($"subject/{id}");
+            var subject = await _http.GetFromJsonAsync<Subject>($"api/subject/{id}");
             return subject;
         }
 
         public async Task<bool> InsertSubject(Subject subject)
         {
-            var responseMessage = await _http.PostAsJsonAsync("subject", subject);
+            var responseMessage = await _http.PostAsJsonAsync("api/subject", subject);
             return responseMessage.IsSuccessStatusCode;
         }
 
         public async Task<bool> InsertSubjects(List<Subject> subjects)
         {
-            var responseMessage = await _http.PostAsJsonAsync("subject/addrange", subjects);
+            var responseMessage = await _http.PostAsJsonAsync("api/subject/addrange", subjects);
             return responseMessage.IsSuccessStatusCode;
         }
 
         public async Task<bool> UpdateSubject(Subject subject)
         {
-            var responseMessage = await _http.PutAsJsonAsync("subject", subject);
+            var responseMessage = await _http.PutAsJsonAsync("api/subject", subject);
             return responseMessage.IsSuccessStatusCode;
         }
 
         public async Task<bool> PairSubjectWithClass(Subject subject, Classroom classroom)
         {
-            var responseMessage = await _http.PostAsJsonAsync("pairSubject",
+            var responseMessage = await _http.PostAsJsonAsync("api/pairSubject",
                 new ClassroomSubjects(){Classroom =  classroom, Subject = subject});
             return responseMessage.IsSuccessStatusCode;
         }
@@ -67,20 +67,20 @@ namespace ElsaWebApp.Services.DataAccess
                     SubjectId = pair.subject.SubjectId
                 });
             }
-            var responseMessage = await _http.PostAsJsonAsync("subject/pairSubjectRange", list);
+            var responseMessage = await _http.PostAsJsonAsync("api/subject/pairSubjectRange", list);
             return responseMessage.IsSuccessStatusCode;
         }
 
 
         public async Task<bool> PairSubjectWithStudents(List<UserSubjects> pairs)
         {
-            var responseMessage = await _http.PostAsJsonAsync("subject/pairSubjectStudentRange", pairs);
+            var responseMessage = await _http.PostAsJsonAsync("api/subject/pairSubjectStudentRange", pairs);
             return responseMessage.IsSuccessStatusCode;
         }
 
         public async Task<List<Subject>> GetSubjectsRead()
         {
-            var subjects = await _http.GetFromJsonAsync<List<Subject>>("subject/GetAllRead");
+            var subjects = await _http.GetFromJsonAsync<List<Subject>>("api/subject/GetAllRead");
             return subjects;
         }
     }

@@ -1,0 +1,64 @@
+@page "/Profile/{Id:int}"
+@using ElsaWebApp.Models.Database
+@using ElsaWebApp.Controllers.DataAccess
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@using System.IO
+@using System.Drawing
+@inject SchooldContext Context;
+@inject NavigationManager NavigationManager;
+@inject AuthenticationStateProvider Provider;
+
+@if (_user != null)
+{
+    <Row>
+        <Column ColumnSize="ColumnSize.Is2.OnDesktop">
+            <ProfilePicture User="@_user"></ProfilePicture> </Column>
+        <Column>
+            <h3>@_user.Firstname @_user.Surname</h3>
+        </Column>
+    </Row>
+    <hr/>
+    <UserDetailTabs SelectedUser="@_user" SelectedSubject="_selectionSubject"/>
+}
+
+@code {
+
+    [Parameter]
+    public int Id { get; set; }
+
+    private ClaimsPrincipal _userClaims;
+    private UserGroups _selectionGroup;
+    private UserSubjects _selectionSubject;
+
+    private List<UserGroups> professorGroups;
+    
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private DbUser _user;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+
+        _user = Context.Students.Include(s => s.Address)
+            .Include(s => s.UserGroups).ThenInclude(g => g.Group).ThenInclude(l => l.Leader)
+            .Include(s => s.UserGroups).ThenInclude(u => u.User)
+            .Include(s => s.UserSubjects).ThenInclude(s => s.Subject)
+            .FirstOrDefault(u => u.UserId == Id);
+
+        if (_user != null && _user.RoleId == 2)
+        {
+            professorGroups = await Context.UserGroups.Include(g => g.Group).Include(u => u.User).Where(l => l.Group.Leader == _user).ToListAsync();
+        }
+        await base.OnInitializedAsync();
+    }
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await Provider.GetAuthenticationStateAsync();
+        _userClaims = authState.User;
+    }
+
+}

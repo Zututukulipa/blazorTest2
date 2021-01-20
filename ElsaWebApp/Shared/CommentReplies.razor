@@ -1,0 +1,169 @@
+@using ElsaWebApp.Models.Database
+@using ElsaWebApp.Controllers.DataAccess
+@using Blazorise.Snackbar
+@inject SchooldContext Context;
+@{
+    if (Comments != null || Comments.Count < 1)
+    {
+        <Table Bordered="true">
+            <TableBody>
+                @{
+                    for (int i = 0; i < materialRootComments.Count; i++)
+                    {
+                        int index = i;
+                        var comment = materialRootComments[i];
+                        <TableRow>
+                            <Row>
+                                <Column>
+                                    <Addons>
+                                        <Addon AddonType="AddonType.Start">
+                                            <ProfilePicture User="@comment.User" PictureSize="32"/>
+                                        </Addon>
+                                        <Addon AddonType="AddonType.Body">
+                                            @{
+                                                var link = $"/Profile/{comment.User.UserId}";
+                          <Blazorise.Link To="@link">
+                              <Heading Size="HeadingSize.Is5"> @comment.User.Firstname @comment.User.Surname</Heading>
+                          </Blazorise.Link>
+                                            }
+                                        </Addon>
+
+                                    </Addons>
+                                </Column>
+                                @if (ActiveUser == comment.User || ActiveUser.RoleId < 3)
+                                {
+                                    <Column ColumnSize="ColumnSize.Is1">
+                                        <Addon AddonType="AddonType.End" Float="Float.Right">
+                                                <Button Color="Color.Danger" Clicked="() => RemoveComment(comment)">X</Button>
+                                        </Addon>
+                                    </Column>
+                                }
+
+                            </Row>
+                            @comment.DateCreated
+                            <p>@comment.Content</p>
+                        </TableRow>
+                        @if (collapses != null && collapses.Length > 0)
+                        {
+                            <Accordion>
+                                <Collapse Visible="@collapses[index]">
+                                    <CollapseHeader>
+                                        <Heading Size="HeadingSize.Is5">
+                                            <Button Clicked="@(() => { collapses[index] = !collapses[index]; StateHasChanged();})">Replies</Button>
+                                        </Heading>
+                                    </CollapseHeader>
+                                    <CollapseBody>
+                                        <CommentReplies ParentComment="@comment" Comments="@Comments" ActiveUser="@ActiveUser"/>
+                                    </CollapseBody>
+                                </Collapse>
+                            </Accordion>
+                        }
+                    }
+                        <TableRow>
+                            <TableRowCell>
+                                @{
+                                    var placeholder = $"Reply {ParentComment.User.Firstname}";
+                          <TextEdit @bind-Text="@_commentContent" Placeholder="@placeholder"/>
+                                }
+                            </TableRowCell>
+                            <TableRowHeader>
+                                <Button Color="Color.Secondary" Clicked="() => AddComment(ParentComment)">
+                                    Reply
+                                </Button>
+                            </TableRowHeader>
+                        </TableRow>
+                }
+            </TableBody>
+        </Table>
+    }
+    <SnackbarStack @ref="_snackbar" Location="SnackbarStackLocation.Right"/>
+
+}
+
+@code {
+
+    [Parameter]
+    public Comment ParentComment { get; set; }
+    
+    [Parameter]
+    public DbUser ActiveUser { get; set; }
+
+    private bool collapsed = false;
+
+    private bool[] collapses;
+
+    private string _commentContent;
+
+    [Parameter]
+    public List<Comment> Comments { get; set; }
+
+    private Comment _selectedReply { get; set; }
+
+    private List<Comment> materialRootComments = new List<Comment>();
+    
+    private SnackbarStack _snackbar;
+
+    protected override void OnInitialized()
+    {
+        foreach (var root in Comments)
+        {
+            if (root.ReplyId != null && root.ReplyId == ParentComment.CommentId)
+                materialRootComments.Add(root);
+        }
+
+        if (materialRootComments != null && materialRootComments.Count > 0)
+            collapses = new bool[materialRootComments.Count];
+        base.OnInitialized();
+    }
+    
+    private void RemoveComment(Comment comment)
+    {
+
+        try
+        {
+            Comments.Remove(comment);
+            Context.Comments.Remove(comment);
+            Context.SaveChanges();
+        }
+        catch (Exception)
+        {
+            _snackbar.Push("An error Occured", SnackbarColor.Danger);
+        }
+    }
+    
+    private void AddComment(Comment context)
+    {
+        if (context != null)
+        {
+            try
+            {
+                Comment comment = new Comment
+                {
+                    Content = _commentContent,
+                    DateCreated = DateTime.Now,
+                    Reply = context,
+                    UserId = ActiveUser.UserId
+                };
+
+                if (context.Material != null)
+                    comment.MaterialId = context.MaterialId;
+                else
+                    comment.ExamId = comment.ExamId;
+
+                Context.Comments.Add(comment);
+                Context.SaveChanges();
+                Comments.Add(comment);
+            }
+            catch (Exception)
+            {
+                _snackbar.Push("An error Occured", SnackbarColor.Danger);
+            }
+        }
+        _commentContent = string.Empty;
+        StateHasChanged();
+    }
+
+
+
+
+}

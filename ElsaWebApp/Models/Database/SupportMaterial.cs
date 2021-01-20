@@ -18,6 +18,9 @@ namespace ElsaWebApp.Models.Database
 
         [Column("MATERIAL_NAME")]
         public string MaterialName { get; set; }
+        
+        [Column("DESCRIPTION")]
+        public string Description { get; set; }
 
         [Column("BINARY_DATA")]
         public byte[] BinaryData { get; set; }
@@ -25,11 +28,11 @@ namespace ElsaWebApp.Models.Database
         [Column("PAGE_COUNT")]
         public int PageCount { get; set; }
 
-        [Column("FILE_PATH")]
-        public string FilePath { get; set; }
-
         [Column("SUBJECT_ID")]
         public int SubjectId { get; set; }
+        
+        [ForeignKey("SubjectId")]
+        public Subject Subject { get; set; }
 
     }
 }

@@ -6,17 +6,19 @@ namespace ElsaWebApp.Models.Database
     [Table("MESSAGE_RECIPIENT")]
     public class MessageRecipient
     {
-        [Key, Column("RECIPIENT_ID")]
-        public int RecipientId { get; set; }
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity), Column("MESSAGE_TRANSACTION_ID")]
+        public int MessageTransactionId { get; set; }
+        
+        [Column("SENDER_ID")] public int SenderId { get; set; }
+        [ForeignKey("SenderId")] public DbUser Sender { get; set; }
 
-        [Column("MESSAGE_ID")]
-        public int MessageId { get; set; }
+        [Column("MESSAGE_ID")] public int MessageId { get; set; }
+        [ForeignKey("MessageId")] public PrivateMessage Message { get; set; }
 
-        [Column("GROUP_ID")]
-        public int GroupId { get; set; }
+        [Column("GROUP_ID")] public int? GroupId { get; set; }
+        [ForeignKey("GroupId")] public UserGroup Group { get; set; }
 
-        [Column("USER_ID")]
-        public int UserId { get; set; }
-
+        [Column("RECIPIENT_ID")] public int? RecipientId { get; set; }
+        [ForeignKey("RecipientId")] public DbUser Recipient { get; set; }
     }
 }

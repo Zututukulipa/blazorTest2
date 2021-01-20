@@ -10,17 +10,11 @@ namespace ElsaWebApp.Models.Database
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity), Column("MESSAGE_ID")]
         public int MessageId { get; set; }
 
-
+        [Column("TIME_SENT")]
         public DateTime TimeSent { get; set; }
 
-
+        [Column("MESSAGE_CONTENT")]
         public string MessageContent { get; set; }
-
-
-        public int UserId { get; set; }
-
-
-        public int ReplyMessageId { get; set; }
 
     }
 }

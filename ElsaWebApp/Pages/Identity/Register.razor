@@ -1,0 +1,100 @@
+@page "/Register"
+@using ElsaWebApp.Models.Database
+@using ElsaWebApp.Utils
+@using Blazorise.Snackbar
+@using ElsaWebApp.Controllers.DataAccess
+@inject SchooldContext Context;
+
+<h3>Register</h3>
+<hr/>
+<h4>Personal Info</h4>
+<Form>
+    <Field Horizontal="true">
+        <FieldLabel ColumnSize="ColumnSize.Is2">Firstname</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text="@newUser.Firstname"/>
+        </FieldBody>
+    </Field>
+    <Field Horizontal="true">
+        <FieldLabel ColumnSize="ColumnSize.Is2">Surname</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text="@newUser.Surname"/>
+        </FieldBody>
+    </Field>
+    <Field Horizontal="true">
+            <FieldLabel ColumnSize="ColumnSize.Is2">Birth Date</FieldLabel>
+            <FieldBody ColumnSize="ColumnSize.Is10">
+                <DateEdit Date="DateTime.Now.AddYears(-20)" TValue="DateTime" Min="DateTime.Now.AddYears(-75)" Max="DateTime.Now.AddYears(-17)"/>
+            </FieldBody>
+        </Field>
+    <Field Horizontal="true">
+        <FieldLabel ColumnSize="ColumnSize.Is2">Phone</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text="@newUser.Phone"/>
+        </FieldBody>
+    </Field>
+    <Field Horizontal="true">
+        <FieldLabel ColumnSize="ColumnSize.Is2">Password</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text="@newUser.UserPassword"/>
+        </FieldBody>
+    </Field>
+    <hr/>
+    <h4>Address</h4>
+    <Field Horizontal="true">
+        <FieldLabel ColumnSize="ColumnSize.Is2">Street</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text="@newUser.Address.Street"/>
+        </FieldBody>
+    </Field>
+    <Field Horizontal="true">
+        <FieldLabel ColumnSize="ColumnSize.Is2">House Number</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text="@newUser.Address.HouseNr"/>
+        </FieldBody>
+    </Field>
+    <Field Horizontal="true">
+        <FieldLabel ColumnSize="ColumnSize.Is2">ZIP</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text="@newUser.Address.Zip"/>
+        </FieldBody>
+    </Field>
+    <Field Horizontal="true">
+        <FieldLabel ColumnSize="ColumnSize.Is2">City</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text="@newUser.Address.City"/>
+        </FieldBody>
+    </Field>
+
+<Button Color="Color.Success" PreventDefaultOnSubmit="true" Clicked="@ValidateAndAdd">Register</Button>
+</Form>
+
+<SnackbarStack @ref="_snackbarStackRef" Location="SnackbarStackLocation.Right"/>
+@code {
+    private DbUser newUser = new DbUser{Address = new Address(), StudyYear = 0, RoleId = 4};
+
+    SnackbarStack _snackbarStackRef;
+    
+    private async Task ValidateAndAdd()
+    {
+        if (await ValidationUtil.IsRegistrationInfoValid(newUser))
+        {
+            _snackbarStackRef.Push("Please fill every field correctly", SnackbarColor.Danger);
+        }
+        else
+        {
+            string email = DataGenerationUtil.GenerateUserEmail(newUser);
+
+            while (Context.Students.FirstOrDefault(x => x.Email == email) != null)
+            {
+                email = DataGenerationUtil.GenerateUserEmail(user:newUser, obfuscate:true);
+            }
+
+            newUser.Email = email;
+
+            await Context.RegisterUser(newUser);
+            _snackbarStackRef.Push("Success!", SnackbarColor.Success);
+        }
+    }
+
+}

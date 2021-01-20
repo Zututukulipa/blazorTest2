@@ -1,0 +1,224 @@
+@page "/Chat"
+@using ElsaWebApp.Models.Database
+@using ElsaWebApp.Controllers.DataAccess
+@using MoreLinq
+@using System.Security.Claims
+@using Blazorise.Snackbar
+@using Microsoft.EntityFrameworkCore
+@inject SchooldContext Context;
+@inject AuthenticationStateProvider Provider;
+
+<h3>Chat</h3>
+<Container>
+    <Row>
+        <Column ColumnSize="ColumnSize.Is9">
+            @if (_selectedUser != null)
+            {
+                <Addons>
+                <Addon AddonType="AddonType.Start">
+                    <ProfilePicture User="@_selectedUser" PictureSize="64"/>
+                </Addon>
+                    <Addon AddonType="AddonType.Body">
+                        @{
+                            var link = $"/Profile/{_selectedUser.UserId}";
+                        <Blazorise.Link To="@link"><Heading Size="HeadingSize.Is3"> @_selectedUser.Firstname @_selectedUser.Surname</Heading></Blazorise.Link>
+                        }
+                    </Addon>
+            </Addons>
+                <div class="pre-scrollable">
+                    @foreach (var message in _messages.Where(x => (x.Sender == _selectedUser && x.Recipient == _activeUser) || (x.Recipient == _selectedUser && x.Sender == _activeUser)))
+
+                    {
+                        if (message.Sender == _activeUser)
+                        {
+                            <div class="shadow-none p-3 mb-5 bg-white rounded">
+                                <div class="text-muted h7 mb-3">You</div>
+                                <div class="text">
+                                    @message.Message.MessageContent
+                                </div>
+                                <div class="text-muted text-right h7 mb-3">@message.Message.TimeSent.ToString("MM/dd/yyyy h:mm tt")</div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="shadow-none p-3 mb-5 bg-light rounded">
+                                <div class="text-muted h7 mb-3">@message.Sender.Firstname @message.Sender.Surname</div>
+                                <div class="text">
+                                    @message.Message.MessageContent
+                                </div>
+                                <div class="text-muted text-right h7 mb-3">@message.Message.TimeSent.ToString("MM/dd/yyyy h:mm tt")</div>
+                            </div>
+                        }
+                    }
+                </div>
+                <Addons>
+
+                    <Addon AddonType="AddonType.Body">
+                        <TextEdit @bind-Text="@_messageText" Placeholder="..."></TextEdit>
+                    </Addon>
+                    <Addon AddonType="AddonType.End">
+                        <Button Color="Color.Secondary" Clicked="() => { SendMessage();}">Reply</Button>
+                    </Addon>
+                </Addons>
+            }
+        </Column>
+        <Column ColumnSize="ColumnSize.Is3" Class="pre-scrollable">
+            <Table Hoverable="true">
+                @if (_messages != null)
+                {
+                    var chats = _messages.FindAll(x => (x.Recipient == _activeUser && x.Sender != _activeUser)).ToList();
+                    chats = chats.OrderByDescending(x => x.Message.TimeSent).DistinctBy(x => x.Sender).ToList();
+                    foreach (var message in chats)
+                    {
+                        <TableRow Clicked="() => _selectedUser = message.Sender">
+                            <TableRow>
+                                <Addons>
+                                    <Addon AddonType="AddonType.Start">
+                                        <ProfilePicture User="@message.Sender" PictureSize="32"/>
+                                    </Addon>
+                                    <Addon AddonType="AddonType.Body">
+                                        @message.Sender.Firstname @message.Sender.Surname
+                                    </Addon>
+                                </Addons>
+                            </TableRow>
+
+                            <TableRow>
+                                @if (message.Message.MessageContent.Length > 30)
+                                {
+                                    @message.Message.MessageContent.Substring(0, 15).Insert(15, "...")
+                                }
+                                else
+                                {
+                                    @message.Message.MessageContent
+                                }
+                            </TableRow>
+
+                            <TableRow>
+                                @{
+                                    var now = DateTime.Now;
+                                    var yesterday = now.AddDays(-1);
+                                    @if (message.Message.TimeSent > yesterday && message.Message.TimeSent <= now)
+                                    {
+                                        <Column ColumnSize="ColumnSize.IsFull" Float="Float.Right" Style="font-size: 10px;">
+                                            @message.Message.TimeSent.ToString("HH:mm")
+                                        </Column>
+                                    }
+                                    else
+                                    {
+                                        <Column ColumnSize="ColumnSize.Is1" Style="font-size: 10px;">
+                                            @message.Message.TimeSent.ToString("d")
+                                        </Column>
+                                    }
+                                }
+                            </TableRow>
+                        </TableRow>
+                        <hr/>
+                    }
+                }
+            </Table>
+        </Column>
+    </Row>
+</Container>
+<hr/>
+<Heading Size="HeadingSize.Is2">Find user</Heading>
+ <Autocomplete Data="@Context.Students.ToListAsync().Result"
+                                                          TextField="@((item) => item.Firstname + " " + item.Surname + " " + item.Email)"
+                                                          ValueField="@((item) => item)"
+                                                          Filter="AutocompleteFilter.Contains"
+                                                          SelectedValueChanged="@UserSelected"
+                                                          Placeholder="Search..."/>
+<SnackbarStack @ref="snackbar" Location="SnackbarStackLocation.Right"/>
+
+@code {
+    private List<MessageRecipient> _messages;
+    private DbUser _selectedUser;
+    private DbUser _activeUser;
+    private string _messageText;
+    
+    private SnackbarStack snackbar;
+
+    private ClaimsPrincipal _userClaims;
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        _messages = Context.Recipients
+            .Include(x => x.Message)
+            .Include(x => x.Sender)
+            .Include(x => x.Recipient)
+            .ToList();
+        _activeUser = Context.Students.FirstOrDefault(x => x.Email == _userClaims.FindFirstValue(ClaimTypes.Email));
+        await base.OnInitializedAsync();
+    }
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await Provider.GetAuthenticationStateAsync();
+        _userClaims = authState.User;
+    }
+
+    private async Task Testerino()
+    {
+        var user = Context.Students.FirstOrDefault(x => x.UserId == 94);
+        if (user != null)
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                PrivateMessage msg = new PrivateMessage()
+                {
+                    MessageContent = $"Another test message {i}", TimeSent = DateTime.Now
+                };
+                await Context.PrivateMessages.AddAsync(msg);
+
+                MessageRecipient rec = new MessageRecipient()
+                {
+                    SenderId = user.UserId,
+                    Recipient = _activeUser,
+                    Message = msg
+                };
+                await Context.Recipients.AddAsync(rec);
+            }
+        }
+        await Context.SaveChangesAsync();
+    }
+
+    private async Task SendMessage()
+    {
+        try
+        {
+
+        
+        PrivateMessage msg = new PrivateMessage()
+        {
+            MessageContent = _messageText, TimeSent = DateTime.Now
+        };
+        await Context.PrivateMessages.AddAsync(msg);
+
+        MessageRecipient rec = new MessageRecipient()
+        {
+            Sender = _activeUser,
+            Recipient = _selectedUser,
+            Message = msg
+        };
+        await Context.Recipients.AddAsync(rec);
+
+        await Context.SaveChangesAsync();
+        }
+        catch (Exception e)
+        {
+            
+            snackbar.Push("Error occured.", SnackbarColor.Danger);
+        }
+    }
+
+    private Task UserSelected(object arg)
+    {
+        if (arg is DbUser user)
+            _selectedUser = user;
+        
+        return Task.CompletedTask;
+    }
+
+}

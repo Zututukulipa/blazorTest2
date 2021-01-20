@@ -1,0 +1,134 @@
+@page "/Exam/{ExamId:int}/{Password}"
+@page "/Exam/{ExamId:int}"
+@using ElsaWebApp.Controllers.DataAccess
+@using ElsaWebApp.Models.Database
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@using Blazorise.Snackbar
+@inject SchooldContext Context;
+@inject Blazored.SessionStorage.ISessionStorageService SessionStorageService;
+@inject AuthenticationStateProvider Provider;
+@inject NavigationManager NavigationManager;
+
+@{
+    if (!_finished && OpenedExam != null)
+    {
+        <Heading Size="HeadingSize.Is4">@OpenedExam?.ExamName</Heading>
+        <Row>@OpenedExam.Creator?.Firstname @OpenedExam.Creator?.Surname</Row>
+        if (ExamQuestions != null && ExamQuestions.Count > 0)
+        {
+            for (int i = 0; i < ExamQuestions.Count; i++)
+            {
+                var questionNum = i + 1;
+                <h5>@questionNum</h5>
+                <p>
+                    @ExamQuestions[i].Description
+                </p>
+                if (ExamQuestions[i].TypeId == 1 || ExamQuestions[i].TypeId == 2)
+                {
+                    foreach (var answer in ExamQuestions[i].Answers)
+                    {
+                        var binded = _userAnswers.FirstOrDefault(x => x.AnswerId == answer.AnswerId);
+                        <Check TValue="bool" @bind-Checked="@binded.Answered">@answer.AnswerContent</Check>
+                    }
+                }
+            }
+            <hr/>
+            <Button Color="Color.Primary" Clicked="@Finish">Submit answers</Button>
+        }
+        <SnackbarStack @ref="@_stack" Location="SnackbarStackLocation.Right"/>
+    }else if (_finished)
+    {
+        <h2>Results</h2>
+    }
+
+}
+@code {
+    [Parameter]
+    public int ExamId { get; set; }
+    private Models.Database.Exam OpenedExam { get; set; }
+
+    SnackbarStack _stack;
+    
+    [Parameter]
+    public string Password { get; set; }
+
+    private bool _finished;
+
+    private List<ExamAnswer> _userAnswers = new List<ExamAnswer>();
+
+    private DbUser _activeUser;
+
+    private List<ExamQuestion> ExamQuestions { get; set; }
+    
+    private ClaimsPrincipal _userClaims;
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetClaimsPrincipalData();
+        var userId = _userClaims.FindFirst(c => c.Type == ClaimTypes.Sid).Value;
+        _activeUser = Context.Students.FirstOrDefault(x => x.UserId == int.Parse(userId));
+        OpenedExam = Context.Exams.Include(x => x.Creator).FirstOrDefault(x => x.ExamId == ExamId);
+        if(Password != null || Password != string.Empty)
+        ExamQuestions = await Context.ExamQuestions
+            .Include(q => q.Exam)
+            .Include(a => a.Answers)
+            .Where(e => e.ExamId == ExamId).ToListAsync();
+        else
+            ExamQuestions = await Context.ExamQuestions
+                .Include(q => q.Exam)
+                .Include(a => a.Answers)
+                .Where(e => e.ExamId == ExamId && e.Exam.ExamPassword == Password).ToListAsync();
+
+        _userAnswers = ExamQuestions.SelectMany(x => x.Answers).ToList();
+        await base.OnInitializedAsync();
+    }
+
+    private void Finish()
+    {
+        try
+        {
+
+       
+        List<UserAnswers> userAnswers = new List<UserAnswers>();
+        foreach (var question in ExamQuestions)
+        {
+            foreach (var answer in _userAnswers.Where(q => q.QuestionId == question.QuestionId))
+            {
+                if (answer.Answered == true)
+                {
+                    var userAnswer = new UserAnswers();
+                    userAnswer.Answer = answer;
+                    userAnswer.User = _activeUser;
+                    userAnswers.Add(userAnswer);
+                }
+                if (question.TypeId == 1 && !_userAnswers.Where(x => x.Question.QuestionId == question.QuestionId).Any(x => x.Answered))
+                {
+                    var userAnswer = new UserAnswers();
+                    userAnswer.Answer = question.Answers.FirstOrDefault(x => x.Correct == 0);
+                    userAnswer.User = _activeUser;
+                    userAnswers.Add(userAnswer);
+                }
+                    
+            }
+        }
+        Context.UserAnswers.AddRange(userAnswers);
+        Context.SaveChanges();
+        _finished = true;
+        }
+        catch (Exception e)
+        {
+            _stack.Push("Error occured during sending your results, please consult with your tutor", SnackbarColor.Danger);
+        }
+    }
+
+    
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await Provider.GetAuthenticationStateAsync();
+        _userClaims = authState.User;
+    }
+
+}

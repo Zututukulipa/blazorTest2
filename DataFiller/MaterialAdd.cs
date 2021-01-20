@@ -10,7 +10,12 @@ namespace DataFiller
 {
     public class MaterialAdd
     {
-        private readonly MaterialService _service = new MaterialService(new HttpClient());
+        private readonly MaterialService _service;
+
+        public MaterialAdd(HttpClient httpClient)
+        {
+            _service = new MaterialService(httpClient);
+        }
         public async Task<bool> AddMaterial()
         {
             var path = @"/home/zututukulipa/Desktop/barcode.txt";
@@ -20,7 +25,6 @@ namespace DataFiller
             file.Close();
             SupportMaterial sm = new SupportMaterial
             {
-                FilePath = path,
                 BinaryData = data,
                 MaterialName = "TEST FILE",
                 MaterialCreated = DateTime.Now,

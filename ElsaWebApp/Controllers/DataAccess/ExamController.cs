@@ -11,7 +11,7 @@ namespace ElsaWebApp.Controllers.DataAccess
 {
     
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class ExamController
     {
         

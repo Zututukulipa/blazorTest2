@@ -19,18 +19,18 @@ namespace ElsaWebApp.Services.DataAccess
 
         public async Task<bool> AddGroups(List<UserGroup> groups)
         {
-            var responseMessage = await _http.PostAsJsonAsync("group/addRange", groups);
+            var responseMessage = await _http.PostAsJsonAsync("api/group/addRange", groups);
             return responseMessage.IsSuccessStatusCode;
         }
 
         public async Task<List<UserGroup>> GetGroups()
         {
-            return await _http.GetFromJsonAsync<List<UserGroup>>("group/getAll");
+            return await _http.GetFromJsonAsync<List<UserGroup>>("api/group/getAll");
         }
 
         public async Task<bool> InsertUsersIntoGroups(object userGroups)
         {
-            var responseMessage = await _http.PostAsJsonAsync("group/assignRange", userGroups);
+            var responseMessage = await _http.PostAsJsonAsync("api/group/assignRange", userGroups);
             return responseMessage.IsSuccessStatusCode;
         }
     }

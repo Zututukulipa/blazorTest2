@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace DataFiller
+namespace ElsaWebApp.Utils
 {
     public class ListUtil
     {
@@ -12,5 +12,7 @@ namespace DataFiller
                 yield return locations.GetRange(i, Math.Min(nSize, locations.Count - i)); 
             }  
         } 
+        
+        
     }
 }

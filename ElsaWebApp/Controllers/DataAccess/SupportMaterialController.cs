@@ -4,11 +4,12 @@ using System.Threading.Tasks;
 using ElsaWebApp.Models.Database;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Net.Http.Headers;
 
 namespace ElsaWebApp.Controllers.DataAccess
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class SupportMaterialController
     {
         private SchooldContext Context { get; }
@@ -18,7 +19,7 @@ namespace ElsaWebApp.Controllers.DataAccess
             Context = context;
         }
         
-        [HttpGet]
+        [HttpGet("getAll")]
         public async Task<ActionResult<List<SupportMaterial>>> GetSupportMaterials()
         {
             var materials = await Context.SupportMaterials.ToListAsync();
@@ -28,15 +29,19 @@ namespace ElsaWebApp.Controllers.DataAccess
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<SupportMaterial>> GetSupportMaterial(int id)
+        public async Task<FileResult> GetSupportMaterial(int id)
         {
             var material = await Context.SupportMaterials.FirstOrDefaultAsync(supportMaterial => supportMaterial.MaterialId == id);
-            if (material == null)
-                return new NotFoundResult();
-            return new OkObjectResult(material);
+            return material == null
+                ? null
+                : new FileContentResult(material.BinaryData, System.Net.Mime.MediaTypeNames.Application.Octet)
+                {
+                    FileDownloadName = material.MaterialName
+                };
+
         }
 
-        [HttpPost]
+        [HttpPost("add")]
         public async Task<ActionResult> InsertSupportMaterial(SupportMaterial supportMaterial)
         {
             try

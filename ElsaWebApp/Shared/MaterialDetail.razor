@@ -1,0 +1,188 @@
+@using ElsaWebApp.Models.Database
+@using Blazorise.Snackbar
+@using ElsaWebApp.Controllers.DataAccess
+@inject SchooldContext Context;
+@inject NavigationManager NavigationManager;
+@inject AuthenticationStateProvider Provider;
+
+<Row>
+            <Column ColumnSize="ColumnSize.Is11">
+                <Heading Size="HeadingSize.Is2">
+                    @Material.MaterialName
+                </Heading>
+            </Column>
+            <Column ColumnSize="ColumnSize.Is1">
+                <Button Color="Color.Primary" Clicked="() => { DownLoadFile(Material); }">
+                    <Icon Name="IconName.Download"></Icon>
+                </Button>
+            </Column>
+        </Row>
+        <Row>
+            Created: @Material.MaterialCreated
+        </Row>
+        <Row>
+            @Material.Description
+        </Row>
+        <hr/>
+        <Addons>
+            <Addon AddonType="AddonType.Body">
+                <TextEdit @bind-Text="@_commentContent" Placeholder="Add Comment"/>
+            </Addon>
+            <Addon AddonType="AddonType.End">
+                <Button Clicked="() => AddComment(Material)" Color="Color.Success">Add</Button>
+            </Addon>
+        </Addons>
+        <hr/>
+        <Table Hoverable="true">
+            <TableBody>
+                @{
+                    var materialRootComments = Comments.Where(r => r.ReplyId == null && r.MaterialId == Material.MaterialId).ToList();
+                    foreach (var comment in materialRootComments)
+                    {
+                        <TableRow>
+                            <Row>
+                                <Column>
+                                    <Addons>
+                                        <Addon AddonType="AddonType.Start">
+                                            <ProfilePicture User="@comment.User" PictureSize="32"/>
+                                        </Addon>
+                                        <Addon AddonType="AddonType.Body">
+                                            @{
+                                                var link = $"/Profile/{comment.User.UserId}";
+                          <Blazorise.Link To="@link">
+                              <Heading Size="HeadingSize.Is5"> @comment.User.Firstname @comment.User.Surname</Heading>
+                          </Blazorise.Link>
+                                            }
+                                        </Addon>
+
+                                    </Addons>
+                                </Column>
+                                @if (ActiveUser == comment.User || ActiveUser.RoleId < 3)
+                                {
+                                    <Column ColumnSize="ColumnSize.Is1">
+                                        <Addon AddonType="AddonType.End" Float="Float.Right">
+                                            <Button Color="Color.Danger" Clicked="() => RemoveComment(comment)">X</Button>
+                                        </Addon>
+                                    </Column>
+                                }
+
+                            </Row>
+                            @comment.DateCreated
+                            <p>@comment.Content</p>
+                        </TableRow>
+
+                        <CommentReplies Comments="Comments" ParentComment="comment" ActiveUser="ActiveUser"/>
+                    }
+                    <hr/>
+                }
+            </TableBody>
+        </Table>
+<SnackbarStack @ref="_snackbar" Location="SnackbarStackLocation.Right"/>
+@code {
+
+    [Parameter]
+    public SupportMaterial Material { get; set; }
+
+    [Parameter]
+    public List<Comment> Comments { get; set; }
+
+    [Parameter]
+    public DbUser ActiveUser { get; set; }
+    
+    private string _commentContent;
+
+    private SnackbarStack _snackbar;
+
+    
+        private void RemoveComment(Comment comment)
+    {
+        try
+        {
+            var linkedComments = Comments.Where(x => x.ReplyId == comment.CommentId).ToList();
+            Comments.Remove(comment);
+            foreach (var linkedComment in linkedComments)
+            {
+                Comments.Remove(linkedComment);
+            }
+            Context.Comments.Remove(comment);
+            Context.Comments.RemoveRange(linkedComments);
+            Context.SaveChanges();
+        }
+        catch (Exception)
+        {
+            _snackbar.Push("An error occured", SnackbarColor.Danger);
+        }
+    }
+
+    private void AddComment(Comment context)
+    {
+        if (context != null)
+        {
+            try
+            {
+                int id = ActiveUser.UserId;
+
+                Comment comment = new Comment
+                {
+                    Content = _commentContent,
+                    DateCreated = DateTime.Now,
+                    Reply = context,
+                    UserId = id
+                };
+
+                if (context.Material != null)
+                    comment.MaterialId = context.MaterialId;
+                else
+                    comment.ExamId = comment.ExamId;
+
+                Context.Comments.Add(comment);
+                Context.SaveChanges();
+                Comments.Add(comment);
+            }
+            catch (Exception)
+            {
+                _snackbar.Push("An error occured", SnackbarColor.Danger);
+            }
+        }
+        _commentContent = string.Empty;
+        StateHasChanged();
+
+    }
+
+    private void AddComment(SupportMaterial context)
+    {
+        if (context != null)
+        {
+            try
+            {
+                int id = ActiveUser.UserId;
+
+                Comment comment = new Comment
+                {
+                    Content = _commentContent,
+                    Material = context,
+                    DateCreated = DateTime.Now,
+                    Reply = null,
+                    UserId = id
+                };
+                Context.Comments.Add(comment);
+                Context.SaveChanges();
+                Comments.Add(comment);
+            }
+            catch (Exception)
+            {
+                _snackbar.Push("An error occured", SnackbarColor.Danger);
+            }
+        }
+        _commentContent = string.Empty;
+        StateHasChanged();
+    }
+    
+    private void DownLoadFile(object obj)
+    {
+        if (obj is SupportMaterial material)
+        {
+            NavigationManager.NavigateTo($"/api/SupportMaterial/{material.MaterialId}", true);
+        }
+    }
+}

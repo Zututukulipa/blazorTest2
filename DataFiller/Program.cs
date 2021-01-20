@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using ElsaWebApp.Controllers.DataAccess;
+using ElsaWebApp.Models.Database;
+using HumanLab;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataFiller
@@ -12,8 +15,9 @@ namespace DataFiller
         {
             try
             {
-               var add = new SubjectAdd(new HttpClient());
-               await add.PairSubjectsWithStudents();
+                var add = new UserAdd();
+                await add.AddProfessors(20);
+                await add.AddUsers(100);
             }
             catch (Exception e)
             {

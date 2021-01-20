@@ -42,11 +42,11 @@ namespace DataFiller
         
         public async Task<bool> PairSubjectsWithStudents()
         {
-            var users = await _userService.GetUsersRead();
+            var users = await _userService.GetUsers();
             var students = users.FindAll(u => u.RoleId == 3);
             if(students == null || students.Count < 1)
                 throw new Exception("Insert classrooms into database prior");
-            List<Subject> subjects = await _service.GetSubjectsRead();
+            List<Subject> subjects = await _service.GetSubjects();
             if(subjects == null || subjects.Count < 1)
                 throw new Exception("Insert subjects into database prior");
 

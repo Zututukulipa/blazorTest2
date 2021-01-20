@@ -1,0 +1,113 @@
+@page "/Subjects"
+@using ElsaWebApp.Controllers.DataAccess
+@using System.Linq
+@using ElsaWebApp.Models.Database
+@using Microsoft.EntityFrameworkCore
+@inject SchooldContext Context
+
+<Select TValue="int" SelectedValue="@_selectedSubject.SubjectId" SelectedValueChanged="@OnSelectedValueChanged">
+    @{
+        foreach (var subject in _subjects)
+        {
+            <SelectItem Value="@subject.SubjectId">
+                @subject.SubjectName
+            </SelectItem>
+        }
+    }
+</Select>
+
+@{
+    if (_selectedSubject != null)
+    {
+        var garantLink = $"/Profile/{_selectedSubject.GarantId}";
+        <DisplayHeading Size="DisplayHeadingSize.Is4">@_selectedSubject.SubjectName</DisplayHeading>
+        <Blazorise.Link To="@garantLink">
+            <Heading Size="HeadingSize.Is3"> @_selectedSubject.Garant.Firstname @_selectedSubject.Garant.Surname </Heading>
+        </Blazorise.Link>
+        <Paragraph>
+            @_selectedSubject.Description
+        </Paragraph>
+        <hr/>
+        @if (_addUserToggle)
+        {
+            <Autocomplete Data="@_users"
+                          TextField="@((item) => item.Firstname + " " + item.Surname + " " + item.Email)"
+                          ValueField="@((item) => item)"
+                          SelectedValue="@_selectedSubject"
+                          SelectedValueChanged="@UserSelected"
+                          Placeholder="Search..."/>
+        }
+        <Row Gutter="(32, 16)">
+            <Column ColumnSize="ColumnSize.Is11">
+                <Heading Size="HeadingSize.Is4">Enrolled students</Heading>
+            </Column>
+            <Column ColumnSize="ColumnSize.Is1">
+                <Button Color="Color.Success" Clicked="() => _addUserToggle = !_addUserToggle">
+                    <Icon Name="IconName.PlusCircle"/>
+                </Button>
+            </Column>
+        </Row>
+
+        if (_selectedSubject.UserSubjects?.Count > 0)
+            foreach (var entry in _selectedSubject.UserSubjects)
+            {
+                <Row Gutter="(32, 16)">
+                    <Column ColumnSize="ColumnSize.Is11">@entry.Student.Firstname @entry.Student.Surname</Column>
+                    <Column ColumnSize="ColumnSize.Is1">
+                        <Button Color="Color.Danger" Clicked="() => RemoveStudent(entry)">
+                            <Icon Name="IconName.MinusCircle"/>
+                        </Button>
+                    </Column>
+
+                </Row>
+            }
+    }
+}
+
+
+@code {
+    private List<Subject> _subjects;
+    private List<DbUser> _users;
+    private DbUser _addedUsers;
+    private Subject _selectedSubject;
+    private bool _addUserToggle;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _subjects = await Context.Subjects
+            .Include(s => s.UserSubjects)
+            .ThenInclude(s => s.Student)
+            .Include(s => s.Garant).ToListAsync();
+        _selectedSubject = _subjects.First();
+        _users = await Context.Students.ToListAsync();
+        _addedUsers = _users.FirstOrDefault();
+        await base.OnInitializedAsync();
+    }
+
+    private
+        void OnSelectedValueChanged(int value)
+    {
+        _selectedSubject = Context.Subjects
+            .Include(s => s.UserSubjects)
+            .ThenInclude(s => s.Student)
+            .FirstOrDefault(g => g.SubjectId == value);
+    }
+
+    private Task RemoveStudent(UserSubjects studentToRemove)
+    {
+        Context.UserSubjects.Remove(studentToRemove);
+        Context.SaveChanges();
+        return Task.CompletedTask;
+    }
+
+    private Task UserSelected(object arg)
+    {
+        if (arg is DbUser user)
+        {
+            Context.UserSubjects.Add(new UserSubjects() {SubjectId = _selectedSubject.SubjectId, StudentId = user.UserId});
+            Context.SaveChanges();
+        }
+        return Task.CompletedTask;
+    }
+
+}

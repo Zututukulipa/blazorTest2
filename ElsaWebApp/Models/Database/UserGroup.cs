@@ -15,6 +15,9 @@ namespace ElsaWebApp.Models.Database
 
         [Column("LEADER_ID")]
         public int LeaderId { get; set; }
+        
+        [ForeignKey("LeaderId")]
+        public virtual DbUser Leader { get; set; }
 
         public virtual ICollection<UserGroups> UserGroups { get; set; }
         

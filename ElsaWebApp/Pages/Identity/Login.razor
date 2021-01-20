@@ -1,0 +1,63 @@
+@page "/Login"
+@using ElsaWebApp.Controllers.DataAccess
+@using ElsaWebApp.Controllers.IdentityManagement
+@using ElsaWebApp.Utils
+@using Blazorise.Snackbar
+@inject SchooldContext Context;
+@inject AuthenticationStateProvider Provider;
+@inject NavigationManager NavigationManager;
+@inject Blazored.SessionStorage.ISessionStorageService SessionStorageService;
+
+<h3>Login</h3>
+<EditForm Model="@_loginPair" OnValidSubmit="@HandleLogin">
+    <Field Horizontal="true">
+        <FieldLabel ColumnSize="ColumnSize.Is1">Email</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit @bind-Text="@_loginPair.Email"/>
+        </FieldBody>
+    </Field>
+
+    <Field Horizontal="true">
+        <FieldLabel ColumnSize="ColumnSize.Is1">Password</FieldLabel>
+        <FieldBody ColumnSize="ColumnSize.Is10">
+            <TextEdit Role="TextRole.Password" @bind-Text="@_loginPair.Password"/>
+        </FieldBody>
+    </Field>
+    <Button Type="ButtonType.Submit" Color="Color.Info">Submit</Button>
+</EditForm>
+<SnackbarStack @ref="snackbarStack" Location="SnackbarStackLocation.Right" />
+
+
+
+@code {
+    private readonly LoginPair _loginPair = new LoginPair();
+    SnackbarStack snackbarStack;
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            var normalizedEmail = StringUtils.RemoveDiacritics(_loginPair.Email);
+            var user = await Task.FromResult(await Context.Login(normalizedEmail, _loginPair.Password));
+            ((CustomAuthStateProvider) Provider).AuthenticateUser(user);
+            NavigationManager.NavigateTo("/");
+        }
+        catch (Exception e)
+        {
+                snackbarStack.Push("Invalid Username or Password.");
+        }
+    }
+
+    private class LoginPair
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+
+        public LoginPair()
+        {
+            Email = string.Empty;
+            Password = string.Empty;
+        }
+    }
+
+}

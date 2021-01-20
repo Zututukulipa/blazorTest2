@@ -1,0 +1,128 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<DomainFile class="oracle.dbtools.crest.model.design.DomainFileWrapper" fileName="sql_creation_script_Domains">
+<domains>
+<Domain class="oracle.dbtools.crest.model.design.Domain" name="NVARCHAR_0_0_64" id="0223E23F-571B-2D7A-DA91-149DD76993AF">
+<createdBy>zututukulipa</createdBy>
+<createdTime>2021-01-06 08:19:17 UTC</createdTime>
+<ownerDesignName>proposal</ownerDesignName>
+<avTSortOrder>0</avTSortOrder>
+<dataTypePrecision>0</dataTypePrecision>
+<dataTypeScale>0</dataTypeScale>
+<dataTypeSize>64</dataTypeSize>
+<fileName>sql_creation_script_Domains</fileName>
+<logicalDatatype>LOGDT037</logicalDatatype>
+</Domain>
+<Domain class="oracle.dbtools.crest.model.design.Domain" name="NVARCHAR_0_0_15" id="0B3A8C31-24EA-17A0-748D-F10897570AAA">
+<createdBy>zututukulipa</createdBy>
+<createdTime>2021-01-06 08:19:17 UTC</createdTime>
+<ownerDesignName>proposal</ownerDesignName>
+<avTSortOrder>0</avTSortOrder>
+<dataTypePrecision>0</dataTypePrecision>
+<dataTypeScale>0</dataTypeScale>
+<dataTypeSize>15</dataTypeSize>
+<fileName>sql_creation_script_Domains</fileName>
+<logicalDatatype>LOGDT037</logicalDatatype>
+</Domain>
+<Domain class="oracle.dbtools.crest.model.design.Domain" name="NVARCHAR_0_0_128" id="2B8C314B-87D4-3827-BF63-BFA3C78A2E5C">
+<createdBy>zututukulipa</createdBy>
+<createdTime>2021-01-06 08:19:17 UTC</createdTime>
+<ownerDesignName>proposal</ownerDesignName>
+<avTSortOrder>0</avTSortOrder>
+<dataTypePrecision>0</dataTypePrecision>
+<dataTypeScale>0</dataTypeScale>
+<dataTypeSize>128</dataTypeSize>
+<fileName>sql_creation_script_Domains</fileName>
+<logicalDatatype>LOGDT037</logicalDatatype>
+</Domain>
+<Domain class="oracle.dbtools.crest.model.design.Domain" name="BLOB_0_0_0" id="574192FB-4B58-34BB-4E8A-1E874AD68702">
+<createdBy>zututukulipa</createdBy>
+<createdTime>2021-01-06 08:19:17 UTC</createdTime>
+<ownerDesignName>proposal</ownerDesignName>
+<avTSortOrder>0</avTSortOrder>
+<fileName>sql_creation_script_Domains</fileName>
+<logicalDatatype>LOGDT029</logicalDatatype>
+</Domain>
+<Domain class="oracle.dbtools.crest.model.design.Domain" name="NVARCHAR_0_0_8" id="5D363796-D650-760E-A600-FF8BA8C01C47">
+<createdBy>zututukulipa</createdBy>
+<createdTime>2021-01-06 08:19:17 UTC</createdTime>
+<ownerDesignName>proposal</ownerDesignName>
+<avTSortOrder>0</avTSortOrder>
+<dataTypePrecision>0</dataTypePrecision>
+<dataTypeScale>0</dataTypeScale>
+<dataTypeSize>8</dataTypeSize>
+<fileName>sql_creation_script_Domains</fileName>
+<logicalDatatype>LOGDT037</logicalDatatype>
+</Domain>
+<Domain class="oracle.dbtools.crest.model.design.Domain" name="NVARCHAR_0_0_3" id="5E416416-49FC-A1C1-2F76-F02C13ADA845">
+<createdBy>zututukulipa</createdBy>
+<createdTime>2021-01-06 08:19:17 UTC</createdTime>
+<ownerDesignName>proposal</ownerDesignName>
+<avTSortOrder>0</avTSortOrder>
+<dataTypePrecision>0</dataTypePrecision>
+<dataTypeScale>0</dataTypeScale>
+<dataTypeSize>3</dataTypeSize>
+<fileName>sql_creation_script_Domains</fileName>
+<logicalDatatype>LOGDT037</logicalDatatype>
+</Domain>
+<Domain class="oracle.dbtools.crest.model.design.Domain" name="NVARCHAR_0_0_1024" id="6D20C086-80F9-DB96-4DA8-FE18179CBE1F">
+<createdBy>zututukulipa</createdBy>
+<createdTime>2021-01-06 08:19:17 UTC</createdTime>
+<ownerDesignName>proposal</ownerDesignName>
+<avTSortOrder>0</avTSortOrder>
+<dataTypePrecision>0</dataTypePrecision>
+<dataTypeScale>0</dataTypeScale>
+<dataTypeSize>1024</dataTypeSize>
+<fileName>sql_creation_script_Domains</fileName>
+<logicalDatatype>LOGDT037</logicalDatatype>
+</Domain>
+<Domain class="oracle.dbtools.crest.model.design.Domain" name="NUMERIC_1_0_0" id="751F6B1F-830E-87A1-5CA6-9799348A3AE6">
+<createdBy>zututukulipa</createdBy>
+<createdTime>2021-01-06 08:19:17 UTC</createdTime>
+<ownerDesignName>proposal</ownerDesignName>
+<avTSortOrder>0</avTSortOrder>
+<dataTypePrecision>1</dataTypePrecision>
+<dataTypeScale>0</dataTypeScale>
+<dataTypeSize>0</dataTypeSize>
+<fileName>sql_creation_script_Domains</fileName>
+<logicalDatatype>LOGDT019</logicalDatatype>
+</Domain>
+<Domain class="oracle.dbtools.crest.model.design.Domain" name="NUMERIC_0_0_0" id="A6CAE295-83C1-F22B-7426-E9237B6ABC19">
+<createdBy>zututukulipa</createdBy>
+<createdTime>2021-01-06 08:19:17 UTC</createdTime>
+<ownerDesignName>proposal</ownerDesignName>
+<avTSortOrder>0</avTSortOrder>
+<fileName>sql_creation_script_Domains</fileName>
+<logicalDatatype>LOGDT019</logicalDatatype>
+</Domain>
+<Domain class="oracle.dbtools.crest.model.design.Domain" name="NVARCHAR_0_0_512" id="A7DB4CE0-FD1D-E7F7-6EA8-DEA0D93CD222">
+<createdBy>zututukulipa</createdBy>
+<createdTime>2021-01-06 08:19:17 UTC</createdTime>
+<ownerDesignName>proposal</ownerDesignName>
+<avTSortOrder>0</avTSortOrder>
+<dataTypePrecision>0</dataTypePrecision>
+<dataTypeScale>0</dataTypeScale>
+<dataTypeSize>512</dataTypeSize>
+<fileName>sql_creation_script_Domains</fileName>
+<logicalDatatype>LOGDT037</logicalDatatype>
+</Domain>
+<Domain class="oracle.dbtools.crest.model.design.Domain" name="Date_0_0_0" id="CD8A0A12-1F5A-53DC-CA05-04B1373758B6">
+<createdBy>zututukulipa</createdBy>
+<createdTime>2021-01-06 08:19:17 UTC</createdTime>
+<ownerDesignName>proposal</ownerDesignName>
+<avTSortOrder>0</avTSortOrder>
+<fileName>sql_creation_script_Domains</fileName>
+<logicalDatatype>LOGDT007</logicalDatatype>
+</Domain>
+<Domain class="oracle.dbtools.crest.model.design.Domain" name="NVARCHAR_0_0_32" id="FE91F62D-0F31-1C7E-071F-3ED30E9A873C">
+<createdBy>zututukulipa</createdBy>
+<createdTime>2021-01-06 08:19:17 UTC</createdTime>
+<ownerDesignName>proposal</ownerDesignName>
+<avTSortOrder>0</avTSortOrder>
+<dataTypePrecision>0</dataTypePrecision>
+<dataTypeScale>0</dataTypeScale>
+<dataTypeSize>32</dataTypeSize>
+<fileName>sql_creation_script_Domains</fileName>
+<logicalDatatype>LOGDT037</logicalDatatype>
+</Domain>
+</domains>
+</DomainFile>

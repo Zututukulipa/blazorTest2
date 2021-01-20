@@ -1,0 +1,167 @@
+@page "/Materials"
+@using ElsaWebApp.Controllers.DataAccess
+@using ElsaWebApp.Models.Database
+@using Microsoft.EntityFrameworkCore
+@using System.IO
+@using System.Security.Claims
+@using Blazorise.Snackbar
+@inject SchooldContext Context;
+@inject NavigationManager NavigationManager;
+@inject AuthenticationStateProvider Provider;
+
+@if (_activeUser != null)
+{
+    <h3>Add Material</h3>
+    
+    <FileEdit Changed="@OnChanged"/>
+    <TextEdit @bind-Text="@_addedMaterial.Description" PlaceHolder="Describe material"/>
+    <NumericEdit @bind-Value="@_addedMaterial.PageCount" Placeholder="Page count"/>
+    <Autocomplete Data="@Context.Subjects.ToList()"
+                  TextField="@((item) => item.SubjectName)"
+                  ValueField="@((item) => item)"
+                  Filter="AutocompleteFilter.Contains"
+                  SelectedValue="@_selectedSubject"
+                  SelectedValueChanged="@MaterialSubjectChanged"
+                  Placeholder="Search..."/>
+    <Button Clicked="() => AddMaterial()" Color="Color.Primary">Add Material</Button>
+    
+
+    <Select TValue="int" SelectedValue="@_selectedValue" SelectedValueChanged="@OnSelectedSubjectChanged">
+        @if (_activeUser.RoleId < 3)
+        {
+            foreach (var subject in Context.Subjects)
+            {
+                <SelectItem Value="subject.SubjectId">@subject.SubjectName</SelectItem>
+            }
+        }
+    </Select>
+    <Autocomplete Data="@Context.SupportMaterials.ToList()"
+                  TextField="@((item) => item.MaterialName + " " + item.Subject.SubjectName + " " + item.Subject.Garant.Firstname)"
+                  ValueField="@((item) => item)"
+                  Filter="AutocompleteFilter.Contains"
+                  SelectedValue="@_selectedMaterial"
+                  SelectedValueChanged="@SelectedMaterialChanged"
+                  Placeholder="Search..."/>
+    <hr/>
+    if (_selectedMaterial != null)
+    {
+        <MaterialDetail Comments="@_comments" Material="@_selectedMaterial" ActiveUser="@_activeUser"/>
+    }
+    <hr/>
+    foreach (var material in _supportMaterials)
+    {
+        <MaterialDetail Comments="@_comments" Material="@material" ActiveUser="@_activeUser"/>
+    }
+}
+<SnackbarStack @ref="_snackbar" Location="SnackbarStackLocation.Right"/>
+
+@code {
+
+    List<SupportMaterial> _supportMaterials = new List<SupportMaterial>();
+    List<Comment> _comments = new List<Comment>();
+
+    private SnackbarStack _snackbar;
+    private ClaimsPrincipal _userClaims;
+
+    private DbUser _activeUser;
+    private int _selectedValue;
+
+    private SupportMaterial _selectedMaterial;
+    
+    private Subject _selectedSubject;
+
+    private SupportMaterial _addedMaterial = new SupportMaterial();
+    
+    
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; }
+
+    private async Task GetClaimsPrincipalData()
+    {
+        var authState = await Provider.GetAuthenticationStateAsync();
+        _userClaims = authState.User;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _supportMaterials = await Context.SupportMaterials.Include(x => x.Subject).ThenInclude(x => x.Garant).ToListAsync();
+        await GetClaimsPrincipalData();
+        _comments = await Context.Comments.Include(s => s.User)
+            .Include(m => m.Material)
+            .Include(r => r.Reply)
+            .ThenInclude(u => u.User)
+            .OrderByDescending(x => x.DateCreated).ToListAsync();
+        _activeUser = Context.Students.FirstOrDefault(x => x.Email == _userClaims.FindFirstValue(ClaimTypes.Email));
+        await base.OnInitializedAsync();
+    }
+
+    async Task OnChanged(FileChangedEventArgs e)
+    {
+        try
+        {
+            foreach (var file in e.Files)
+            {
+                await using var stream = new MemoryStream();
+                await file.WriteToStreamAsync(stream);
+
+                var buffer = stream.ToArray();
+                _addedMaterial.BinaryData = buffer;
+                _addedMaterial.MaterialName = file.Name;
+                _addedMaterial.MaterialCreated = DateTime.Now;
+                _addedMaterial.MaterialLastChange = DateTime.Now;
+               
+            }
+        }
+        catch (Exception exc)
+        {
+            _snackbar.Push("Image size is too big (up to 65Kb)", SnackbarColor.Danger);
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void Refresh()
+    {
+        _supportMaterials = Context.SupportMaterials.ToList();
+    }
+
+
+    private void SelectedMaterialChanged(object obj)
+    {
+        if (obj is SupportMaterial material)
+        {
+            _selectedMaterial = material;
+        }
+    }
+
+    private void OnSelectedSubjectChanged(int id)
+    {
+        _selectedSubject = id == 0 ? _selectedSubject = Context.Subjects.FirstOrDefault(x => x.SubjectId > 0) : _selectedSubject = Context.Subjects.FirstOrDefault(x => x.SubjectId == id);
+    }
+
+    private async Task AddMaterial()
+    {
+        try
+        {
+            await Context.SupportMaterials.AddAsync(_addedMaterial);
+            await Context.SaveChangesAsync();
+            _snackbar.Push("Material Added", SnackbarColor.Success);
+        }
+        catch (Exception e)
+        {
+            _snackbar.Push("Error during material add occured", SnackbarColor.Danger);
+        }
+    }
+
+    private void MaterialSubjectChanged(object obj)
+    {
+        if (obj is Subject subject)
+        {
+            _addedMaterial.Subject = subject;
+        }
+    }
+
+}

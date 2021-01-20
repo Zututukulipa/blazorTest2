@@ -1,12 +1,22 @@
-﻿<AuthorizeView>
+﻿@using ElsaWebApp.Controllers.IdentityManagement
+@inject AuthenticationStateProvider Provider;
+
+<AuthorizeView Roles="administrator, professor">
     <Authorized>
         <a href="Identity/Account/Manage">Hello, @context.User.Identity.Name!</a>
-        <form method="post" action="Identity/Account/LogOut">
-            <button type="submit" class="nav-link btn btn-link">Log out</button>
-        </form>
+            <Button @onclick="Deauth" class="nav-link btn btn-link">Log out</Button>
     </Authorized>
     <NotAuthorized>
-        <a href="Identity/Account/Register">Register</a>
-        <a href="Identity/Account/Login">Log in</a>
+        <a href="Register">Register</a>
+        <a href="Login">Log in</a>
     </NotAuthorized>
 </AuthorizeView>
+
+@code
+{
+    private void Deauth()
+    {
+        ((CustomAuthStateProvider)Provider).Deauthorize();
+        
+    }
+}

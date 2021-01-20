@@ -23,37 +23,37 @@ namespace ElsaWebApp.Services.DataAccess
 
         public async Task<List<Exam>> GetExams()
         {
-            var exams = await _http.GetFromJsonAsync<List<Exam>>("exam/GetAll");
+            var exams = await _http.GetFromJsonAsync<List<Exam>>("api/exam/GetAll");
             return exams;
         }
 
         public async Task<Exam> GetExamById(int id)
         {
-            var exam = await _http.GetFromJsonAsync<Exam>($"exam/{id}");
+            var exam = await _http.GetFromJsonAsync<Exam>($"api/exam/{id}");
             return exam;
         }
 
         public async Task<bool> InsertExam(Exam exam)
         {
-            var responseMessage = await _http.PostAsJsonAsync("exam", exam);
+            var responseMessage = await _http.PostAsJsonAsync("api/exam", exam);
             return responseMessage.IsSuccessStatusCode;
         }
         
         public async Task<bool> InsertExams(List<Exam> exams)
         {
-            var responseMessage = await _http.PostAsJsonAsync("exam/addRange", exams);
+            var responseMessage = await _http.PostAsJsonAsync("api/exam/addRange", exams);
             return responseMessage.IsSuccessStatusCode;
         }
 
         public async Task<bool> UpdateExam(Exam exam)
         {
-            var responseMessage = await _http.PutAsJsonAsync("exam", exam);
+            var responseMessage = await _http.PutAsJsonAsync("api/exam", exam);
             return responseMessage.IsSuccessStatusCode;
         }
 
         public async Task<ExamQuestion> InsertQuestion(ExamQuestion question)
         {
-            var responseMessage = await _http.PostAsJsonAsync("exam/question", question);
+            var responseMessage = await _http.PostAsJsonAsync("api/exam/question", question);
             if (responseMessage.Content != null)
             {
                 var jsonString = await responseMessage.Content.ReadAsStringAsync();
@@ -65,7 +65,7 @@ namespace ElsaWebApp.Services.DataAccess
 
         public async Task<bool> InsertAnswers(List<UserAnswers> answers)
         {
-            var responseMessage = await _http.PostAsJsonAsync("exam/question/answer/submit", answers);
+            var responseMessage = await _http.PostAsJsonAsync("api/exam/question/answer/submit", answers);
             return responseMessage.IsSuccessStatusCode;
         }
 
@@ -77,35 +77,35 @@ namespace ElsaWebApp.Services.DataAccess
         
         public async Task<List<ExamQuestion>> GetQuestions(int id)
         {
-            var examQuestions = await _http.GetFromJsonAsync<List<ExamQuestion>>("exam/question/10");
+            var examQuestions = await _http.GetFromJsonAsync<List<ExamQuestion>>("api/exam/question/10");
             return examQuestions;
         }
 
         public async Task<List<ExamAnswer>> GetAnswers()
         {
-            var examAnswers = await _http.GetFromJsonAsync<List<ExamAnswer>>("exam/question/answer/getAll");
+            var examAnswers = await _http.GetFromJsonAsync<List<ExamAnswer>>("api/exam/question/answer/getAll");
             return examAnswers;
         }
         
         public async Task<bool> InsertQuestionAnswers(List<UserAnswers> answers)
         {
-            var responseMessage = await _http.PostAsJsonAsync("exam/question/answer/submit", answers);
+            var responseMessage = await _http.PostAsJsonAsync("api/exam/question/answer/submit", answers);
             return responseMessage.IsSuccessStatusCode;
         }
 
         public async Task<List<UserAnswers>> GetUserAnswers()
         {
-            return await _http.GetFromJsonAsync<List<UserAnswers>>("/exam/question/answers/getAll");
+            return await _http.GetFromJsonAsync<List<UserAnswers>>("api/exam/question/answers/getAll");
         }
 
         public async Task<List<UserExamAnswersView>> GetQuestionAnswers()
         {
-            return await _http.GetFromJsonAsync<List<UserExamAnswersView>>("/exam/question/answered/getAll");
+            return await _http.GetFromJsonAsync<List<UserExamAnswersView>>("api/exam/question/answered/getAll");
         }
 
         public async Task<bool> InsertResults(List<ExamResult> gradings)
         {
-            var responseMessage = await _http.PostAsJsonAsync("exam/results/AddRange", gradings);
+            var responseMessage = await _http.PostAsJsonAsync("api/exam/results/AddRange", gradings);
             return responseMessage.IsSuccessStatusCode;
         }
     }

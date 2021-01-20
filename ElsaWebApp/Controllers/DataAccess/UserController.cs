@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ElsaWebApp.Models.Database;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace ElsaWebApp.Controllers.DataAccess
 {
     [ApiController]
-    [Route("[controller]")]
+    [AllowAnonymous]
+    [Route("api/[controller]")]
     public class UserController
     {
-        private OracleService OracleService { get; }
         private SchooldContext Context { get; }
 
         public UserController(SchooldContext context)
@@ -124,7 +125,7 @@ namespace ElsaWebApp.Controllers.DataAccess
         [HttpGet("year/{groupId}")]
         public Task<List<DbUser>> GetUsers(int groupId)
         {
-            return Context.Students.Where(u => int.Parse(u.StudyYear) == groupId).ToListAsync();
+            return Context.Students.Where(u => u.StudyYear == groupId).ToListAsync();
         }
 
         [HttpPost]
@@ -155,6 +156,12 @@ namespace ElsaWebApp.Controllers.DataAccess
             {
                 return new BadRequestResult();
             }
+        }
+
+        [HttpPost("Login")]
+        public async Task<ActionResult<DbUser>> Login(string email, string password)
+        {
+            return null;
         }
 
         [HttpPut]

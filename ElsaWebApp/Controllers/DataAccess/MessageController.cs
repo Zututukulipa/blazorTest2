@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ElsaWebApp.Controllers.DataAccess
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class MessageController
     {
         private SchooldContext Context { get; }
@@ -18,7 +18,7 @@ namespace ElsaWebApp.Controllers.DataAccess
             Context = context;
         }
 
-        [HttpGet]
+        [HttpGet("getAll")]
         public async Task<ActionResult<List<PrivateMessage>>> GetMessages()
         {
             var messages = await Context.PrivateMessages.ToListAsync();

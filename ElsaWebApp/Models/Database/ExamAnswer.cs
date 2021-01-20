@@ -21,7 +21,11 @@ namespace ElsaWebApp.Models.Database
 
         [Column("CORRECT")]
         public int Correct { get; set; }
+        
+        [NotMapped]
+        public bool Answered { get; set; }
 
-        public ICollection<UserAnswers> Users { get; set; }
+
+        public virtual ICollection<UserAnswers> Users { get; set; }
     }
 }

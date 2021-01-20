@@ -16,7 +16,7 @@ namespace DataFiller
             return new DbUser(){Address = address, Email = person.Email, 
                                 Firstname = person.FirstName, Surname = person.LastName,
                                 Phone = person.PhoneNumber.Replace(" ", ""), BirthDate = person.BirthDate,
-                                RoleId = 3
+                                RoleId = 3, UserPassword = "password", Salt = RandomUtils.RandomSalt(32)
             };
         }
 
